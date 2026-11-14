@@ -44,13 +44,21 @@ export function settlementBalance(rows,used) {
  }
  return balance;
 }
-export function carryover(state,month) {
- let balance=0;
+export function signedAmount(value) {
+ const text=String(value).replaceAll(',','').trim().replace(/^−/,'-');
+ if(!/^[+-]?\d{1,12}$/.test(text)||Math.abs(Number(text))>MAX)throw Error('이월은 −999,999,999,999~999,999,999,999원의 정수로 입력해주세요.');
+ return Number(text);
+}
+export function carryover(state,month,useOverride=true) {
+ if(useOverride && state.months[month]?.carryover!==undefined)return state.months[month].carryover;
+ const anchor=Object.keys(state.months).filter(key=>key<month && state.months[key].carryover!==undefined).sort().at(-1);
+ let balance=anchor ? state.months[anchor].carryover : 0;
  for(const [key,config] of Object.entries(state.months)) {
-   if(key<month) balance+=settlementBalance(config.settlement,0);
+   if(key<month && (!anchor || key>=anchor)) balance+=settlementBalance(config.settlement,0);
  }
  for(const entry of Object.values(state.entries)) {
-   if(!entry.deleted && entry.date.slice(0,7)<month) balance-=entry.amount;
+   const key=entry.date.slice(0,7);
+   if(!entry.deleted && key<month && (!anchor || key>=anchor)) balance-=entry.amount;
  }
  return balance;
 }
@@ -69,6 +77,7 @@ export function validate(s){
  for(const [id,e] of Object.entries(s.entries))if(!/^[\w-]+$/.test(id)||!validNote(e)||!date(e.date)||e.date>today()||!val(e.amount)||typeof e.deleted!=='boolean')throw Error('지출 데이터가 올바르지 않습니다.');
  for(const [m,c] of Object.entries(s.months)){if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)||!val(c.budget)||typeof c.memo!=='string'||c.memo.length>10000||!c.weeks||!Array.isArray(c.settlement)||c.settlement.length>30)throw Error('월 설정이 올바르지 않습니다.');for(const [w,v] of Object.entries(c.weeks))if(!weeks(m).includes(w)||!val(v))throw Error('주 예산이 올바르지 않습니다.');for(const r of c.settlement)if(typeof r.name!=='string'||r.name.length>40||!val(r.value))throw Error('정산이 올바르지 않습니다.');}
  for(const [month,config] of Object.entries(s.months)){
+   if(config.carryover!==undefined && (!Number.isSafeInteger(config.carryover)||Math.abs(config.carryover)>MAX))throw Error('이월 금액이 올바르지 않습니다.');
    if(config.weeklyBase!==undefined && !val(config.weeklyBase))throw Error('기준 주 예산이 올바르지 않습니다.');
    if(config.dayNotes!==undefined && (!isMap(config.dayNotes) || Object.entries(config.dayNotes).some(([day,note])=>!date(day)||day.slice(0,7)!==month||typeof note!=='string'||note.length>2000)))throw Error('날짜 메모가 올바르지 않습니다.');
    if(config.fixedExpenses!==undefined){

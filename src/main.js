@@ -75,7 +75,7 @@ function settlementCard(rows,used) {
  const balance=opening+settlementBalance(rows,used);
  const items=rows.map(r=>`<div class="pair"><span>${esc(r.name)}</span><b>${money(r.value)}원</b></div>`);
  const incomeIndex=rows.findIndex(r=>r.name.trim()==='수입');
- items.splice(incomeIndex+1,0,`<div class="pair carryover" title="지난달 정산잔액"><span>이월</span><b>${money(opening)}원</b></div>`);
+ items.splice(incomeIndex+1,0,`<div class="pair carryover" title="${state.months[month]?.carryover!==undefined?'직접 설정한 이월':'지난달 정산잔액'}"><span>이월</span><b>${money(opening)}원</b></div>`);
  return `<section class="card settlement"><h2>${icon('spark')}이번 달 정산</h2>
    <div class="settlement-items">${items.join('')}</div>
    <div class="pair"><span>사용액</span><b>${money(used)}원</b></div>
@@ -120,7 +120,7 @@ function modal(title,content,submit){const d=$('#dialog');d.innerHTML=`<form id=
 function numberField(label,name,value){return `<label>${esc(label)}<input name="${name}" inputmode="numeric" value="${value}" required></label>`;}
 function openMonthlyPlan() {
   const key = month;
-  modal(key + ' · 이달의 계획', planEditor(monthData(state,key),key,activePage==='fixed'?'fixed':'memo'), form => {
+  modal(key + ' · 이달의 계획', planEditor(monthData(state,key),key,activePage==='fixed'?'fixed':'memo',carryover(state,key,false)), form => {
     const next = readPlan(form,state,key);
     const updated = structuredClone(state);
     updated.months[key] = next;

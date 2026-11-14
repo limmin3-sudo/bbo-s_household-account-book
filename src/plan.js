@@ -1,4 +1,4 @@
-import {amount, monthData, money, proratedWeeks, weekLabel, weeks} from './model.js';
+import {amount, signedAmount, monthData, money, proratedWeeks, weekLabel, weeks} from './model.js';
 
 const escape = value => String(value).replace(/[&<>"']/g, char =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
@@ -24,10 +24,14 @@ function editableRow(row, kind) {
     <button type="button" data-remove-row aria-label="항목 삭제"><img class="icon" src="/assets/planner/trash.webp" alt=""></button></div>`;
 }
 
-export function planEditor(config, month, initial = 'memo') {
+export function planEditor(config, month, initial = 'memo', automaticCarryover = 0) {
+  const opening=`<div class="carryover-editor"><p>지난달 정산잔액 · ${money(automaticCarryover)}원</p>
+    <label><input type="checkbox" name="manualCarryover" ${config.carryover!==undefined?'checked':''}> 이월 직접 입력</label>
+    <label>이월 (원 · 양수/음수)<input name="carryover" type="text" value="${config.carryover??automaticCarryover}" data-automatic="${automaticCarryover}" ${config.carryover===undefined?'disabled':''}></label>
+    <p class="muted">체크를 해제하고 저장하면 지난달 정산잔액을 자동으로 사용해요.</p></div>`;
   const parts = [
     ['memo','월별 계획',`<label>계획·메모<textarea name="memo" rows="6" maxlength="10000">${escape(config.memo)}</textarea></label>`],
-    ['settle','월 정산',config.settlement.filter(r=>r.name!=='고정지출').map(r=>editableRow(r,'settle')).join('')+'<button type="button" data-add-row="settle">정산 항목 추가</button><p class="muted">고정지출은 아래 항목의 합계로 표시해요.</p>'],
+    ['settle','월 정산',opening+config.settlement.filter(r=>r.name!=='고정지출').map(r=>editableRow(r,'settle')).join('')+'<button type="button" data-add-row="settle">정산 항목 추가</button><p class="muted">고정지출은 아래 항목의 합계로 표시해요.</p>'],
     ['fixed','고정지출',fixedItems(config).map(r=>editableRow(r,'fixed')).join('')+'<button type="button" data-add-row="fixed">고정지출 추가</button>'],
     ['budgets','달·주 예산',`<label>달 예산 (원)<input name="budget" inputmode="numeric" value="${config.budget}" required></label>
       <label>7일 기준 주 예산 (원)<input name="weeklyBase" inputmode="numeric" value="${config.weeklyBase??''}" placeholder="예: 150,000" aria-describedby="weekly-help"></label>
@@ -38,6 +42,13 @@ export function planEditor(config, month, initial = 'memo') {
 }
 
 export function bindPlanRows(form,month) {
+  const manual=form.elements.manualCarryover;
+  const opening=form.elements.carryover;
+  manual.onchange=()=>{
+    opening.disabled=!manual.checked;
+    if(!manual.checked)opening.value=opening.dataset.automatic;
+    else opening.focus();
+  };
   const base=form.elements.weeklyBase;
   const weekInputs=weeks(month).map(week=>form.elements.namedItem(week));
   let previous;
@@ -82,5 +93,7 @@ export function readPlan(form, state, month) {
     weeks:Object.fromEntries(weeks(month).map(w=>[w,amount(form.get(w))]))};
   if(form.get('weeklyBase').trim())config.weeklyBase=amount(form.get('weeklyBase'));
   else delete config.weeklyBase;
+  if(form.has('manualCarryover'))config.carryover=signedAmount(form.get('carryover'));
+  else delete config.carryover;
   return config;
 }

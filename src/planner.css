@@ -149,6 +149,7 @@ header { background:linear-gradient(110deg,#312940,#514268 70%,#393047); }
 .fixed-list {margin:0}.fixed-list>div {display:flex;gap:10px;justify-content:space-between;padding:12px;border-bottom:1px solid #ddcde5}.fixed-list dt{overflow-wrap:anywhere}.fixed-list dd{margin:0;font-weight:700}
 .plan-group {border:1px solid #dfd0e8;border-radius:12px;padding:9px 12px;margin:8px 0}
 .plan-group summary {cursor:pointer;font-weight:700;color:#533665;padding:4px}
+.carryover-editor input[type=checkbox] {width:auto;margin:0 6px 0 0;vertical-align:middle}
 .plan-group[open] summary {margin-bottom:8px}
 dialog textarea {resize:vertical;line-height:1.55;font-family:var(--ui-font);font-size:16px}
 dialog input {font-family:var(--ui-font)}

@@ -134,6 +134,29 @@ async function run() {
       await page.click('#next');
       assert.equal(await page.locator('.carryover b').innerText(),'1,938,000원');
       assert.equal(await net.innerText(),'1,938,000원');
+      for(const [raw,display] of [['-12,000','−12,000원'],['+21,000','21,000원'],['0','0원']]) {
+        await page.click('#open-plan');
+        await page.getByText('월 정산',{exact:true}).click();
+        await page.locator('[name=manualCarryover]').check();
+        await page.fill('[name=carryover]',raw);
+        await page.click('#modal-save');
+        await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
+        assert.equal(await page.locator('.carryover b').innerText(),display);
+        assert.equal(await net.innerText(),display);
+      }
+      await page.click('#open-plan');
+      await page.getByText('월 정산',{exact:true}).click();
+      assert.equal(await page.locator('[name=carryover]').inputValue(),'0');
+      await page.fill('[name=carryover]','999');
+      await page.click('#close-dialog');
+      assert.equal(await page.locator('.carryover b').innerText(),'0원');
+      await page.click('#open-plan');
+      await page.getByText('월 정산',{exact:true}).click();
+      await page.locator('[name=manualCarryover]').uncheck();
+      assert.ok(await page.locator('[name=carryover]').isDisabled());
+      await page.click('#modal-save');
+      await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
+      assert.equal(await page.locator('.carryover b').innerText(),'1,938,000원');
       await page.click('#prev');
       await page.click('[data-delete]');
       assert.equal(await net.innerText(),'2,100,000원');
