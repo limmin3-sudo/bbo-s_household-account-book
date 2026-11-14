@@ -1,4 +1,4 @@
-import {categoryButtons,bindCategories,manageCategories,categoryName} from './categories.js';
+import {expenseDetails,bindCategories,manageCategories,categoryName} from './categories.js';
 import {planEditor, bindPlanRows, readPlan, fixedPage} from './plan.js';
 import {reportPage} from './report.js';
 let activePage = 'calendar';
@@ -67,7 +67,7 @@ function calendar() {
   }
   return blank.repeat(offset) + cells.join('') + blank.repeat((7-(offset+count)%7)%7);
 }
-function entryRows(){const rows=Object.entries(state.entries).filter(([,e])=>e.date===selected&&!e.deleted);return rows.length?rows.map(([id,e])=>`<div class="entry"><section><strong>${money(e.amount)}원</strong>${e.note||e.purchase||e.categoryId?`<p class="entry-note">${[e.categoryId?categoryName(state,e):'',e.note,e.purchase].filter(Boolean).map(esc).join(' · ')}</p>`:''}</section><div><button data-edit="${id}" aria-label="${money(e.amount)}원 수정">${icon('edit')}</button><button data-delete="${id}" aria-label="${money(e.amount)}원 삭제">${icon('trash')}</button><button data-history="${id}" aria-label="${money(e.amount)}원 수정 이력">${icon('history')}</button></div></div>`).join(''):`<div class="empty-day">${icon(stamped(state,selected)?'stamp':'purse')}<p>${stamped(state,selected)?'무지출성공!':'아직 기록이 없어요.'}</p></div>`;}
+function entryRows(){const rows=Object.entries(state.entries).filter(([,e])=>e.date===selected&&!e.deleted);return rows.length?rows.map(([id,e])=>`<div class="entry"><section><span class="entry-category">${esc(categoryName(state,e))}</span>${e.note||e.purchase?`<p class="entry-note">${[e.note,e.purchase].filter(Boolean).map(esc).join(' · ')}</p>`:''}<strong>${money(e.amount)}원</strong></section><div><button data-edit="${id}" aria-label="${money(e.amount)}원 수정">${icon('edit')}</button><button data-delete="${id}" aria-label="${money(e.amount)}원 삭제">${icon('trash')}</button><button data-history="${id}" aria-label="${money(e.amount)}원 수정 이력">${icon('history')}</button></div></div>`).join(''):`<div class="empty-day">${icon(stamped(state,selected)?'stamp':'purse')}<p>${stamped(state,selected)?'무지출성공!':'아직 기록이 없어요.'}</p></div>`;}
 function on(id,fn){const e=$('#'+id);if(e)e.onclick=fn;}
 function modal(title,content,submit){const d=$('#dialog');d.innerHTML=`<form id="modal-form"><div class="modal-head"><h2>${title}</h2><button type="button" id="close-dialog" aria-label="닫기">×</button></div>${content}<p id="modal-error" role="alert"></p>${submit?btn('modal-save','저장','heart','primary wide'):''}</form>`;d.showModal();on('close-dialog',()=>d.close());if(submit)$('#modal-form').onsubmit=async e=>{e.preventDefault();try{await submit(new FormData(e.target));d.close();}catch(e){$('#modal-error').textContent=e.message;}};}
 function numberField(label,name,value){return `<label>${esc(label)}<input name="${name}" inputmode="numeric" value="${value}" required></label>`;}
@@ -87,7 +87,7 @@ function openDayEditor(date) {
   const key = date.slice(0,7);
   const previous = monthData(state,key).dayNotes?.[date] || '';
   const expenseFields = date <= today() ? `<label>사용 금액 (원)<input name="amount" inputmode="numeric" placeholder="0" autofocus></label>
-    <label>사용처 (선택)<input name="use" maxlength="80" placeholder="예: 쿠팡"></label><label>구매 내용 (선택)<input name="purchase" maxlength="200" placeholder="예: 세탁세제"></label>${categoryButtons(state)}` : '';
+    ${expenseDetails(state)}` : '';
   modal(date + ' 기록', expenseFields + `<label>날짜 메모<textarea name="dayNote" rows="3" maxlength="2000" placeholder="금액 없이 메모만 저장할 수도 있어요.">${esc(previous)}</textarea></label>`, form => {
     const raw = String(form.get('amount') || '').trim();
     const note = String(form.get('use') || '').trim();
@@ -108,7 +108,7 @@ function openDayEditor(date) {
     validate(next);
     return persist(next);
   });
-  bindCategories($('#dialog .category-picker'),$('#dialog [name=use]'),state);
+  bindCategories($('#modal-form'),state);
   $('#dialog [name=amount], #dialog textarea')?.focus();
 }
 
@@ -142,7 +142,7 @@ function bind(){
      if (canEdit()) openDayEditor(selected);
    };
  });
- document.querySelectorAll('[data-edit]').forEach(e=>e.onclick=()=>{const id=e.dataset.edit;modal('지출 수정',numberField('금액','amount',state.entries[id].amount)+`<label>사용처 (선택)<input name="note" maxlength="80" value="${esc(state.entries[id].note||'')}"></label><label>구매 내용<input name="purchase" maxlength="200" value="${esc(state.entries[id].purchase||'')}"></label>${categoryButtons(state,state.entries[id].categoryId)}`,async f=>{const v=amount(f.get('amount'));if(!v)throw Error('0원은 지출 삭제 후 무지출 확인을 사용해주세요.');await change(s=>revise(s,id,{amount:v,note:String(f.get('note')||'').trim(),purchase:f.get('purchase').trim(),categoryId:f.get('categoryId')||''},'지출 수정'));});bindCategories($('#dialog .category-picker'),$('#dialog [name=note]'),state);});
+ document.querySelectorAll('[data-edit]').forEach(e=>e.onclick=()=>{const id=e.dataset.edit;modal('지출 수정',numberField('금액','amount',state.entries[id].amount)+`${expenseDetails(state,state.entries[id])}`,async f=>{const v=amount(f.get('amount'));if(!v)throw Error('0원은 지출 삭제 후 무지출 확인을 사용해주세요.');await change(s=>revise(s,id,{amount:v,note:String(f.get('use')||'').trim(),purchase:f.get('purchase').trim(),categoryId:f.get('categoryId')||''},'지출 수정'));});bindCategories($('#modal-form'),state);});
  document.querySelectorAll('[data-delete]').forEach(e=>e.onclick=()=>{const id=e.dataset.delete;undo=id;change(s=>revise(s,id,{deleted:true},'삭제'));});
  document.querySelectorAll('[data-history]').forEach(e=>e.onclick=()=>history(e.dataset.history));
  on('undo',()=>{const id=undo;undo=null;change(s=>revise(s,id,{deleted:false},'삭제 되돌리기'));});

@@ -15,13 +15,54 @@ export function categoryButtons(state, selected = '') {
       `<button type="button" data-category="${esc(id)}" aria-pressed="${id === selected}">${esc(c.name)}</button>`).join('')}</div>`;
 }
 
-export function bindCategories(container, merchant, state) {
-  container?.querySelectorAll('[data-category]').forEach(button => {
+export function expenseDetails(state, entry = {}) {
+  return `<fieldset class="expense-category"><legend>카테고리</legend>${categoryButtons(state,entry.categoryId)}</fieldset>
+    <label>사용처 (선택)<input name="use" maxlength="80" value="${esc(entry.note)}" placeholder="예: 쿠팡"></label>
+    <div class="merchant-picker" role="group" aria-label="사용처 선택"></div>
+    <label>세부 내용 (선택)<input name="purchase" maxlength="200" value="${esc(entry.purchase)}" placeholder="예: 세탁세제"></label>`;
+}
+
+export function bindCategories(form, state) {
+  const container = form.querySelector('.category-picker');
+  if (!container) return;
+  const category = container.querySelector('[name=categoryId]');
+  const merchant = form.elements.use;
+  const picker = form.querySelector('.merchant-picker');
+  function highlightMerchant() {
+    for (const button of picker.querySelectorAll('button')) {
+      button.setAttribute('aria-pressed',String(button.dataset.merchant === merchant.value.trim()));
+    }
+  }
+  function showMerchants() {
+    const names = new Set();
+    const preferred = state.categories?.[category.value]?.merchant;
+    if (preferred) names.add(preferred);
+    for (const entry of Object.values(state.entries)) {
+      if (!entry.deleted && (entry.categoryId || '') === category.value && entry.note?.trim()) names.add(entry.note.trim());
+    }
+    picker.innerHTML = [...names].map(name=>`<button type="button" data-merchant="${esc(name)}">${esc(name)}</button>`).join('');
+    highlightMerchant();
+  }
+  picker.onclick = event => {
+    const button = event.target.closest('[data-merchant]');
+    if (button) {
+      merchant.value = button.dataset.merchant;
+      highlightMerchant();
+    }
+  };
+  merchant.addEventListener('input',highlightMerchant);
+  showMerchants();
+  container.querySelectorAll('[data-category]').forEach(button => {
     button.onclick = () => {
       const id = button.dataset.category;
-      container.querySelector('[name=categoryId]').value = id;
+      if (id === category.value) return;
+      const previousDefault = state.categories?.[category.value]?.merchant || '';
+      category.value = id;
       container.querySelectorAll('[data-category]').forEach(b => b.setAttribute('aria-pressed',String(b===button)));
-      if (merchant && state.categories?.[id]?.merchant) merchant.value = state.categories[id].merchant;
+      if (!merchant.value || merchant.value === previousDefault || picker.querySelector('[aria-pressed=true]')) {
+        merchant.value = state.categories?.[id]?.merchant || '';
+      }
+      showMerchants();
     };
   });
 }

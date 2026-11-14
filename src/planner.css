@@ -24,7 +24,7 @@ header::after { content:''; position:absolute; right:-7px; top:-11px; width:47px
 .month-switch button { padding:0; width:40px; height:40px; border:0; background:none; }
 .month-switch .icon { width:100%; height:100%; }
 .account>span { color:#fff; }
-button:not(.day):not(#prev):not(#next) { background:var(--key) center/100% 100% no-repeat; border:0; color:#492e59; }
+:where(button:not(.day):not(#prev):not(#next)) { background:var(--key) center/100% 100% no-repeat; border:0; color:#492e59; }
 button.primary:not(.day),#add { background:#674078 var(--ribbon) center/100% 100%; color:white; }
 button:disabled { opacity:.68; }
 .primary .icon { filter:none; }
@@ -124,7 +124,7 @@ h1,h2,h3,button,.brand h1,.calendar-title h2,.detail-title h2,.card>h2,.month-sw
 header { background:linear-gradient(110deg,#312940,#514268 70%,#393047); }
 .card>h2,.calendar-title,.detail-title { color:#392b48; background:linear-gradient(100deg,#e7daf4,#f3edf9); border:1px solid #dbcae7; }
 .detail-title>span {color:#675378}
-#app button:not(.day):not(.plot-day):not(#prev):not(#next):not(:where(#pick-month, [data-month][aria-pressed=true])) {
+#app button:not(.day):not(.plot-day):not(#prev):not(#next):not(:where(#pick-month, [data-month][aria-pressed=true], .category-picker button, .merchant-picker button)) {
   border:1px solid #c9b5d9; border-radius:18px; background:#fcfaff url('/assets/planner/pill.svg') center/100% 100%;
   color:#483258; box-shadow:inset 0 1px 0 #fff,0 1px 2px #442e5a18;
   line-height:1.35; font-family:var(--ui-font); font-weight:700; white-space:normal; word-break:keep-all;
@@ -154,9 +154,13 @@ dialog input {font-family:var(--ui-font)}
   #app .page-switch button{padding:6px 3px;gap:3px}.page-switch .icon{width:14px;height:14px}
 }
 
-.category-picker {display:flex;flex-wrap:wrap;gap:5px;grid-column:1/-1;margin:4px 0;max-height:85px;overflow:auto}
-#app .category-picker button {min-height:30px;padding:4px 11px;font-size:14px}
-#app .category-picker button[aria-pressed=true] {color:#fff;background:#785198 url('/assets/planner/pill-purple.svg') center/100% 100%}
+.expense-category {margin:14px 0;padding:0;border:0;min-width:0}
+.expense-category legend {padding:0;color:#826990;font-size:12px}
+.category-picker,.merchant-picker {display:flex;flex-wrap:wrap;gap:5px;margin:6px 0;max-height:125px;overflow:auto}
+.merchant-picker:empty {display:none}
+#app :is(.category-picker,.merchant-picker) button {min-height:34px;max-width:100%;overflow-wrap:anywhere;padding:4px 11px;border:1px solid #c9b5d9;border-radius:18px;background:#fcfaff url('/assets/planner/pill.svg') center/100% 100%;font:700 14px/1.35 var(--ui-font)}
+#app :is(.category-picker,.merchant-picker) button[aria-pressed=true] {color:white;border-color:#502d6e;background:#613984 url('/assets/planner/pill-purple.svg') center/100% 100%}
+.entry-category {display:block;font-weight:700;color:#653b80;overflow-wrap:anywhere}
 #purchase {grid-column:1/-1}
 .category-row {padding:7px 0 13px;border-bottom:1px solid var(--rule)}
 .category-row label {margin:7px 0}
