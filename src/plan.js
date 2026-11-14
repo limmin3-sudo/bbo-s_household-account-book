@@ -38,7 +38,8 @@ export function planEditor(config, month, initial = 'memo', automaticCarryover =
       <p id="weekly-help">입력하면 이달에 포함된 일수에 맞춰 각 주 예산을 채워요. 주별로 조정한 뒤 저장하세요.</p>`+
       weeks(month).map((w,i)=>`<label>${i+1}주 · ${weekLabel(w,month)}<input name="${w}" inputmode="numeric" value="${config.weeks[w]||0}" required></label>`).join('')],
   ];
-  return parts.map(([key,name,html])=>`<details class="plan-group" ${key===initial?'open':''}><summary>${name}</summary>${html}</details>`).join('');
+  return parts.map(([key,name,html])=>`<details class="plan-group" ${key===initial?'open':''}><summary>${name}</summary>${html}</details>`).join('')+
+    '<details class="plan-group"><summary>기록 내보내기·복원</summary><div class="data-actions"><button type="button" id="export">내보내기</button><button type="button" id="import">가져오기</button><button type="button" id="trash">휴지통</button></div></details>';
 }
 
 export function bindPlanRows(form,month) {

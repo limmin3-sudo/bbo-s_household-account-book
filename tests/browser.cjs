@@ -90,7 +90,20 @@ async function run() {
         return size('zero') === size('detail-add') && size('zero') >= 16;
       }));
       await page.click('#zero');
+      await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
+      await page.locator('.day.selected .stamp img').evaluate(img=>img.decode());
       assert.equal(await page.locator('.day.selected .stamp').count(),1);
+      const beforeStamp=await page.locator('.day.selected .stamp img').boundingBox();
+      await page.click('#detail-add');
+      await page.fill('[name=dayNote]','도장메모');
+      await page.click('#modal-save');
+      await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
+      const afterStamp=await page.locator('.day.selected .stamp img').boundingBox();
+      assert.deepEqual(afterStamp,beforeStamp,'Memo should not change seal size or location');
+      assert.equal(await page.locator('.topline #export,.topline #import,.topline #trash,.week-range,.bottom').count(),0);
+      assert.equal(await page.locator('.page-switch #open-plan').count(),0);
+      assert.equal(await page.locator('.plan-actions #open-plan,.plan-actions #category-manage').count(),2);
+      assert.ok(await page.evaluate(()=>document.querySelector('header').getBoundingClientRect().bottom<=document.querySelector('.topline').getBoundingClientRect().top));
       await page.evaluate(()=>document.fonts.ready);
       if(width>=1440){
         const dimensions=await page.evaluate(()=>({
@@ -163,14 +176,23 @@ async function run() {
       await page.click('#undo');
       assert.equal(await net.innerText(),'1,938,000원');
       await page.click('[data-delete]');
+      await page.click('#open-plan');
+      await page.getByText('기록 내보내기·복원',{exact:true}).click();
+      await page.fill('[name=memo]','복원창을 닫아도 유지할 입력');
+      await page.click('#trash');
+      await page.locator('dialog').last().getByRole('button',{name:'닫기',exact:true}).click();
+      assert.equal(await page.locator('#dialog [name=memo]').inputValue(),'복원창을 닫아도 유지할 입력');
       await page.click('#trash');
       await page.click('[data-restore]');
       await page.click('[data-history]');
       await page.locator('[data-revision]').last().click();
       assert.equal(await page.locator('.day.selected .day-amount').textContent(),'999,999,999,999');
       const downloaded=page.waitForEvent('download');
+      await page.click('#open-plan');
+      await page.getByText('기록 내보내기·복원',{exact:true}).click();
       await page.click('#export');
       const payload=await fs.readFile(await (await downloaded).path());
+      await page.click('#close-dialog');
       await page.click('[data-delete]');
       await page.locator('#file').setInputFiles({name:'restore.json',mimeType:'application/json',buffer:payload});
       await page.click('#import-confirm');
