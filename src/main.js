@@ -45,7 +45,28 @@ function render(){
  bind();if(!canEdit())document.querySelectorAll('main:not(.report-layout) input,main:not(.report-layout) textarea,main:not(.report-layout) button:not(#prev):not(#next):not(#today):not(.day)').forEach(e=>e.disabled=true);
 }
 function weekEnd(w,m){const d=new Date(w+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+6);const end=d.toISOString().slice(0,10);const last=`${m}-${new Date(+m.slice(0,4),+m.slice(5),0).getDate()}`;return end>last?last:end;}
-function calendar(){const first=month+'-01',offset=(new Date(first+'T12:00:00').getDay()+6)%7,n=new Date(+month.slice(0,4),+month.slice(5),0).getDate();let html='<div class="blank" aria-hidden="true"></div>'.repeat(offset);for(let d=1;d<=n;d++){const date=month+'-'+String(d).padStart(2,'0'),v=dayTotal(state,date);html+=`<button class="day ${date===selected?'selected':''} ${date===today()?'is-today':''}" data-date="${date}" aria-label="${date}, ${money(v)}원${stamped(state,date)?', 무지출 성공':''}" aria-pressed="${date===selected}"><span class="day-number">${d}</span>${v?`<span class="day-amount">${money(v).replaceAll(',',',<wbr>')}</span>`:stamped(state,date)?'<span class="stamp"><img src="/assets/planner/no-spend.svg" alt="무지출성공!"></span>':''}</button>`;}return html+'<div class="blank" aria-hidden="true"></div>'.repeat((7-(offset+n)%7)%7);}
+function calendar() {
+  const first = month + '-01';
+  const offset = (new Date(first + 'T12:00:00').getDay() + 6) % 7;
+  const count = new Date(+month.slice(0,4), +month.slice(5), 0).getDate();
+  const notes = monthData(state, month).dayNotes || {};
+  const blank = '<div class="blank" aria-hidden="true"></div>';
+  const cells = [];
+  for (let day = 1; day <= count; day++) {
+    const date = month + '-' + String(day).padStart(2, '0');
+    const total = dayTotal(state, date);
+    const note = notes[date] || '';
+    const zero = stamped(state, date);
+    const label = [date, total ? money(total)+'원' : '', zero ? '무지출 성공' : '', note].filter(Boolean).join(', ');
+    cells.push(`<button class="day ${date===selected?'selected':''} ${date===today()?'is-today':''}" data-date="${date}" aria-label="${esc(label)}" aria-pressed="${date===selected}">
+      <span class="day-number">${day}</span>
+      ${note ? `<span class="calendar-note" title="${esc(note)}">${esc(note)}</span>` : ''}
+      ${total ? `<span class="day-amount">${money(total).replaceAll(',',',<wbr>')}</span>` : ''}
+      ${zero ? '<span class="stamp"><img src="/assets/planner/no-spend.svg" alt="무지출성공!"></span>' : ''}
+    </button>`);
+  }
+  return blank.repeat(offset) + cells.join('') + blank.repeat((7-(offset+count)%7)%7);
+}
 function entryRows(){const rows=Object.entries(state.entries).filter(([,e])=>e.date===selected&&!e.deleted);return rows.length?rows.map(([id,e])=>`<div class="entry"><section><strong>${money(e.amount)}<small>원</small></strong>${e.note||e.purchase||e.categoryId?`<p class="entry-note">${[e.categoryId?categoryName(state,e):'',e.note,e.purchase].filter(Boolean).map(esc).join(' · ')}</p>`:''}</section><div><button data-edit="${id}" aria-label="${money(e.amount)}원 수정">${icon('edit')}</button><button data-delete="${id}" aria-label="${money(e.amount)}원 삭제">${icon('trash')}</button><button data-history="${id}" aria-label="${money(e.amount)}원 수정 이력">${icon('history')}</button></div></div>`).join(''):`<div class="empty-day">${icon(stamped(state,selected)?'stamp':'purse')}<p>${stamped(state,selected)?'무지출성공!':'아직 기록이 없어요.'}</p></div>`;}
 function on(id,fn){const e=$('#'+id);if(e)e.onclick=fn;}
 function modal(title,content,submit){const d=$('#dialog');d.innerHTML=`<form id="modal-form"><div class="modal-head"><h2>${title}</h2><button type="button" id="close-dialog" aria-label="닫기">×</button></div>${content}<p id="modal-error" role="alert"></p>${submit?btn('modal-save','저장','heart','primary wide'):''}</form>`;d.showModal();on('close-dialog',()=>d.close());if(submit)$('#modal-form').onsubmit=async e=>{e.preventDefault();try{await submit(new FormData(e.target));d.close();}catch(e){$('#modal-error').textContent=e.message;}};}

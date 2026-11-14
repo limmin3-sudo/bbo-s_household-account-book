@@ -166,3 +166,17 @@ dialog input {font-family:var(--ui-font)}
 .category-breakdown li span{overflow-wrap:anywhere}
 @media(min-width:901px){.detail{overflow:auto}.detail #entries{flex-shrink:0;max-height:26%}.detail .empty-day .icon{width:50px;height:50px}}
 @media(min-width:901px){main:not(.report-layout){grid-template-rows:minmax(0,1fr)}.right,.left{min-height:0}.detail #detail-add{margin:10px 0}.detail .empty-day .icon{width:clamp(65px,9vh,108px);height:clamp(65px,9vh,108px)}}
+
+.day-number,.day-amount {flex-shrink:0}
+.calendar-note {
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;
+  min-height:0; overflow:hidden; overflow-wrap:anywhere; text-align:left;
+  color:#593c69; font:600 clamp(11px,.82vw,16px)/1.25 var(--ui-font);
+}
+.day:has(.calendar-note) .stamp {min-height:20px}
+@media(max-width:900px) {
+  .day:has(.calendar-note){height:auto;min-height:83px}
+  .days:has(.calendar-note) {grid-auto-rows:minmax(86px,auto)}
+  .day,.blank {align-self:stretch}
+  .calendar-note {font-size:11px}
+}

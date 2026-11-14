@@ -79,12 +79,23 @@ async function run() {
       assert.equal(await page.locator('.day.selected').getAttribute('data-date'),originalDay);
       assert.equal(await page.locator('.entry').count(),1);
       await page.locator('#file').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{}')});
-      assert.match(await page.locator('#status').textContent(),/가져오기 실패/);
+      await page.locator('#status').filter({hasText:'가져오기 실패'}).waitFor();
       assert.equal(await page.locator('.entry').count(),1);
       await page.click('.day.selected');
       await page.fill('[name=dayNote]','날짜별 메모');
       await page.click('#modal-save');
       assert.match(await page.locator('.saved-day-note').innerText(),/날짜별 메모/);
+      const recordedCell = page.locator('[data-date="' + originalDay + '"]');
+      assert.equal(await recordedCell.locator('.calendar-note').innerText(),'날짜별 메모');
+      await page.click('#prev');
+      await page.click('#next');
+      assert.equal(await recordedCell.locator('.calendar-note').innerText(),'날짜별 메모');
+      const bounds = await recordedCell.evaluate(cell => {
+        const note = cell.querySelector('.calendar-note').getBoundingClientRect();
+        const amount = cell.querySelector('.day-amount').getBoundingClientRect();
+        return note.height > 8 && note.bottom <= amount.top + 1 && amount.bottom <= cell.getBoundingClientRect().bottom + 1;
+      });
+      assert.ok(bounds,'Memo and amount must remain visible inside their day at '+width);
       assert.equal(await page.locator('.entry').count(),1);
       assert.equal(await page.locator('.saved-plan').innerText(),'이번 달 여행 준비');
       await page.click('#page-fixed');
