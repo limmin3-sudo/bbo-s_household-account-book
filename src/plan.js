@@ -1,4 +1,4 @@
-import {amount, monthData, money, weeks} from './model.js';
+import {amount, monthData, money, proratedWeeks, weekLabel, weeks} from './model.js';
 
 const escape = value => String(value).replace(/[&<>"']/g, char =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
@@ -24,18 +24,36 @@ function editableRow(row, kind) {
     <button type="button" data-remove-row aria-label="항목 삭제"><img class="icon" src="/assets/planner/trash.webp" alt=""></button></div>`;
 }
 
-export function planEditor(config, month, endDate, initial = 'memo') {
+export function planEditor(config, month, initial = 'memo') {
   const parts = [
     ['memo','월별 계획',`<label>계획·메모<textarea name="memo" rows="6" maxlength="10000">${escape(config.memo)}</textarea></label>`],
     ['settle','월 정산',config.settlement.filter(r=>r.name!=='고정지출').map(r=>editableRow(r,'settle')).join('')+'<button type="button" data-add-row="settle">정산 항목 추가</button><p class="muted">고정지출은 아래 항목의 합계로 표시해요.</p>'],
     ['fixed','고정지출',fixedItems(config).map(r=>editableRow(r,'fixed')).join('')+'<button type="button" data-add-row="fixed">고정지출 추가</button>'],
-    ['budgets','달·주 예산',`<label>달 예산 (원)<input name="budget" inputmode="numeric" value="${config.budget}" required></label>`+
-      weeks(month).map((w,i)=>`<label>${i+1}주 · ${w < month+'-01' ? month+'-01' : w} ~ ${endDate(w,month)}<input name="${w}" inputmode="numeric" value="${config.weeks[w]||0}" required></label>`).join('')],
+    ['budgets','달·주 예산',`<label>달 예산 (원)<input name="budget" inputmode="numeric" value="${config.budget}" required></label>
+      <label>7일 기준 주 예산 (원)<input name="weeklyBase" inputmode="numeric" value="${config.weeklyBase??''}" placeholder="예: 150,000" aria-describedby="weekly-help"></label>
+      <p id="weekly-help">입력하면 이달에 포함된 일수에 맞춰 각 주 예산을 채워요. 주별로 조정한 뒤 저장하세요.</p>`+
+      weeks(month).map((w,i)=>`<label>${i+1}주 · ${weekLabel(w,month)}<input name="${w}" inputmode="numeric" value="${config.weeks[w]||0}" required></label>`).join('')],
   ];
   return parts.map(([key,name,html])=>`<details class="plan-group" ${key===initial?'open':''}><summary>${name}</summary>${html}</details>`).join('');
 }
 
-export function bindPlanRows(form) {
+export function bindPlanRows(form,month) {
+  const base=form.elements.weeklyBase;
+  const weekInputs=weeks(month).map(week=>form.elements.namedItem(week));
+  let previous;
+  base.addEventListener('input',()=>{
+    base.setCustomValidity('');
+    if(!base.value.trim()) {
+      if(previous) weekInputs.forEach((input,i)=>{input.value=previous[i];});
+      previous=undefined;
+      return;
+    }
+    try {
+      const values=proratedWeeks(month,base.value);
+      previous??=weekInputs.map(input=>input.value);
+      for(const input of weekInputs)input.value=String(values[input.name]);
+    } catch(error){base.setCustomValidity(error.message);}
+  });
   form.addEventListener('invalid', event => {const group=event.target.closest('details');if(group)group.open=true;},true);
   form.addEventListener('click', event => {
     const button=event.target.closest('button');
@@ -60,6 +78,9 @@ export function readPlan(form, state, month) {
   const original=monthData(state,month);
   const index=original.settlement.findIndex(row=>row.name==='고정지출');
   settlement.splice(index<0?settlement.length:index,0,{name:'고정지출',value:fixedTotal});
-  return {...original,memo:form.get('memo'),budget:amount(form.get('budget')),settlement,fixedExpenses,
+  const config={...original,memo:form.get('memo'),budget:amount(form.get('budget')),settlement,fixedExpenses,
     weeks:Object.fromEntries(weeks(month).map(w=>[w,amount(form.get(w))]))};
+  if(form.get('weeklyBase').trim())config.weeklyBase=amount(form.get('weeklyBase'));
+  else delete config.weeklyBase;
+  return config;
 }

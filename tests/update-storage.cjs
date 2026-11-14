@@ -24,6 +24,7 @@ async function run() {
       await page.fill('[name=use]','테스트 가게');
       await page.fill('[name=dayNote]','배포 전 테스트 메모');
       await page.click('#modal-save');
+      await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
       const raw = await page.evaluate(()=>localStorage.getItem('bbo-demo-v1'));
       assert.equal(Object.values(JSON.parse(raw).entries)[0].amount,3200);
       await fs.writeFile(file,JSON.stringify({profile:await context.storageState(),raw}));
@@ -44,6 +45,7 @@ async function run() {
     await second.click('#detail-add');
     await second.fill('[name=amount]','1000');
     await second.click('#modal-save');
+    await second.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
     const newer=await read();
     assert.notEqual(newer,snapshot.raw);
     await page.click('#detail-add');

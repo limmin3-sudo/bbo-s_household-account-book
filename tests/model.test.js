@@ -7,6 +7,30 @@ test('추가·수정·삭제·되돌리기·금액 이력 복원 재계산',()=>
 test('미기록/확인 무지출 구분 및 미래 도장 금지, 지출 추가 제거',()=>{const s=empty(),d=today();assert.equal(stamped(s,d),false);s.closed[d]=true;assert.equal(stamped(s,d),true);s.closed['2099-01-01']=true;assert.equal(stamped(s,'2099-01-01'),false);delete s.closed['2099-01-01'];revise(s,'a',{date:d,amount:1,deleted:false},'추가');assert.equal(stamped(s,d),false);revise(s,'a',{deleted:true},'삭제');assert.equal(stamped(s,d),false);});
 test('내보내기 roundtrip 및 가져오기 무결성 검사',()=>{const s=empty();s.months['2026-11']={...monthData(s,'2026-11'),memo:'<script>악성</script>'};revise(s,'a',{date:today(),amount:999999999999,deleted:false},'추가');assert.deepEqual(validate(JSON.parse(JSON.stringify(s))),s);for(const f of [null,{schema:2}, {...s,entries:{a:{date:'2026-02-30',amount:1,deleted:false}}},{...s,entries:{a:{date:'2099-01-01',amount:1,deleted:false}}},{...s,entries:{a:{date:today(),amount:-1,deleted:false}}},{...s,months:{'2026-11':{...s.months['2026-11'],budget:NaN}}}])assert.throws(()=>validate(f));});
 import {merchantRanking, suggestedMerchants, merchantRule} from '../src/merchants.js';
+import {weekLabel,proratedWeeks} from '../src/model.js';
+test('기준 주 예산을 해당 월 일수에 따라 원 단위로 반올림한다',()=>{
+  const jan=proratedWeeks('2027-01','150,000');
+  assert.equal(jan['2026-12-28'],64286);
+  assert.equal(jan['2027-01-04'],150000);
+  const november=proratedWeeks('2026-11',150000);
+  assert.equal(november['2026-10-26'],21429);
+  assert.equal(november['2026-11-30'],21429);
+  assert.equal(proratedWeeks('2024-02',70000)['2024-02-26'],40000);
+  assert.ok(Object.values(proratedWeeks('2027-01',0)).every(n=>n===0));
+  assert.throws(()=>proratedWeeks('2027-01',-1));
+});
+test('짧은 주는 해당 월 부분만 표시하고 각 달의 예산과 사용액을 분리한다',()=>{
+  const start='2026-11-30';
+  assert.equal(weekLabel('2026-10-26','2026-11'),'2026-11-01 (1일)');
+  assert.equal(weekLabel(start,'2026-11'),'2026-11-30 (1일)');
+  assert.equal(weekLabel(start,'2026-12'),'2026-12-01 ~ 2026-12-06 (6일)');
+  const s=empty();
+  s.months['2026-11']={...monthData(s,'2026-11'),budget:100000,weeks:{[start]:10000}};
+  s.months['2026-12']={...monthData(s,'2026-12'),budget:200000,weeks:{[start]:60000}};
+  s.entries={a:{date:start,amount:11000},b:{date:'2026-12-01',amount:3000}};
+  assert.deepEqual(totals(s,'2026-11',start),{used:11000,remaining:89000,weekUsed:11000,weekRemaining:-1000});
+  assert.deepEqual(totals(s,'2026-12',start),{used:3000,remaining:197000,weekUsed:3000,weekRemaining:57000});
+});
 test('사용처 추천은 카테고리별 유효 지출 횟수를 따르고 이름 수정과 숨김을 보존한다',()=>{
   const s=empty();
   function add(id,categoryId,note,deleted=false){

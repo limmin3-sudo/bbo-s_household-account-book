@@ -14,6 +14,24 @@ function defaultCategories() {
 export const empty=()=>({schema:1,entries:{},months:{},closed:{},history:{},categories:defaultCategories()});
 export function weekStart(date){const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);return d.toISOString().slice(0,10);}
 export function weeks(month){const n=new Date(+month.slice(0,4),+month.slice(5),0).getDate();return [...new Set(Array.from({length:n},(_,i)=>weekStart(`${month}-${String(i+1).padStart(2,'0')}`)))];}
+export function weekRange(start,month) {
+ const first = month+'-01';
+ const last = month+'-'+new Date(+month.slice(0,4),+month.slice(5),0).getDate();
+ const sunday = new Date(start+'T12:00:00Z');
+ sunday.setUTCDate(sunday.getUTCDate()+6);
+ const from = start<first ? first : start;
+ const end = sunday.toISOString().slice(0,10);
+ const to = end>last ? last : end;
+ return {from,to,days:Number(to.slice(8))-Number(from.slice(8))+1};
+}
+export function weekLabel(start,month) {
+ const {from,to,days}=weekRange(start,month);
+ return from===to ? from+' (1일)' : from+' ~ '+to+' ('+days+'일)';
+}
+export function proratedWeeks(month,base) {
+ const value=amount(base);
+ return Object.fromEntries(weeks(month).map(start=>[start,Math.round(value*weekRange(start,month).days/7)]));
+}
 export const monthData=(s,m)=>s.months[m]||{budget:0,weeks:{},settlement:[{name:'수입',value:0},{name:'고정지출',value:0},{name:'저축',value:0}],memo:''};
 export function totals(s,m,w){const rows=Object.values(s.entries).filter(e=>!e.deleted&&e.date.startsWith(m));const used=rows.reduce((a,e)=>a+e.amount,0);const wu=rows.filter(e=>weekStart(e.date)===w).reduce((a,e)=>a+e.amount,0);const c=monthData(s,m);return {used,remaining:c.budget-used,weekUsed:wu,weekRemaining:(c.weeks[w]||0)-wu};}
 export function dayTotal(s,d){return Object.values(s.entries).filter(e=>e.date===d&&!e.deleted).reduce((a,e)=>a+e.amount,0);}
@@ -32,6 +50,7 @@ export function validate(s){
  for(const [id,e] of Object.entries(s.entries))if(!/^[\w-]+$/.test(id)||!validNote(e)||!date(e.date)||e.date>today()||!val(e.amount)||typeof e.deleted!=='boolean')throw Error('지출 데이터가 올바르지 않습니다.');
  for(const [m,c] of Object.entries(s.months)){if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)||!val(c.budget)||typeof c.memo!=='string'||c.memo.length>10000||!c.weeks||!Array.isArray(c.settlement)||c.settlement.length>30)throw Error('월 설정이 올바르지 않습니다.');for(const [w,v] of Object.entries(c.weeks))if(!weeks(m).includes(w)||!val(v))throw Error('주 예산이 올바르지 않습니다.');for(const r of c.settlement)if(typeof r.name!=='string'||r.name.length>40||!val(r.value))throw Error('정산이 올바르지 않습니다.');}
  for(const [month,config] of Object.entries(s.months)){
+   if(config.weeklyBase!==undefined && !val(config.weeklyBase))throw Error('기준 주 예산이 올바르지 않습니다.');
    if(config.dayNotes!==undefined && (!isMap(config.dayNotes) || Object.entries(config.dayNotes).some(([day,note])=>!date(day)||day.slice(0,7)!==month||typeof note!=='string'||note.length>2000)))throw Error('날짜 메모가 올바르지 않습니다.');
    if(config.fixedExpenses!==undefined){
      const rows=config.fixedExpenses;
