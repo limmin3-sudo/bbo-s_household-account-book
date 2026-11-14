@@ -35,6 +35,15 @@ export function proratedWeeks(month,base) {
 export const monthData=(s,m)=>s.months[m]||{budget:0,weeks:{},settlement:[{name:'수입',value:0},{name:'고정지출',value:0},{name:'저축',value:0}],memo:''};
 export function totals(s,m,w){const rows=Object.values(s.entries).filter(e=>!e.deleted&&e.date.startsWith(m));const used=rows.reduce((a,e)=>a+e.amount,0);const wu=rows.filter(e=>weekStart(e.date)===w).reduce((a,e)=>a+e.amount,0);const c=monthData(s,m);return {used,remaining:c.budget-used,weekUsed:wu,weekRemaining:(c.weeks[w]||0)-wu};}
 export function dayTotal(s,d){return Object.values(s.entries).filter(e=>e.date===d&&!e.deleted).reduce((a,e)=>a+e.amount,0);}
+export function settlementBalance(rows,used) {
+ let balance=-used;
+ for(const {name,value} of rows) {
+   const label=name.trim();
+   if(label==='수입') balance+=value;
+   if(label==='고정지출' || label==='저축') balance-=value;
+ }
+ return balance;
+}
 export const stamped=(s,d,now=today())=>d<=now&&s.closed[d]===true&&dayTotal(s,d)===0;
 export function validate(s){
  const isMap = value => value !== null && typeof value === 'object' && !Array.isArray(value);

@@ -9,7 +9,7 @@ import {initializeApp} from 'firebase/app';
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from 'firebase/auth';
 import {getFirestore,doc,onSnapshot,runTransaction} from 'firebase/firestore';
 import {firebaseConfig} from './config.js';
-import {today,money,amount,empty,weekStart,weekLabel,weeks,monthData,totals,dayTotal,stamped,validate,revise} from './model.js';
+import {today,money,amount,empty,weekStart,weekLabel,weeks,monthData,totals,settlementBalance,dayTotal,stamped,validate,revise} from './model.js';
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 const $=s=>document.querySelector(s),esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const artwork = new Set(["add","edit","trash","restore","wallet","calendar","cloud","purse","prev","next","seal"]);
@@ -70,13 +70,20 @@ function connect(u){if(unsub)unsub();ready=false;state=empty();version=0;pending
  unsub=onSnapshot(doc(db,'users',u.uid,'ledgers','main'),{includeMetadataChanges:true},snap=>{if(user?.uid!==u.uid||pending||busy)return;try{state=snap.exists()?validate(snap.data().data):empty();version=snap.exists()?snap.data().version:0;ready=!snap.metadata.fromCache;failed=false;status=ready?'서버 동기화 완료':'서버 연결 대기 중';render();}catch(e){error(e);}},e=>error(e));
 }
 function budgetCard(title,kind,used,remaining,value){return `<section class="card budget ${kind}"><h2>${icon(kind==='monthly'?'wallet':'heart')}${title}</h2><div class="budget-top"><span>예산</span><strong>${money(value)}원</strong></div><div class="pair"><span>사용액</span><b>${money(used)}원</b></div><div class="balance ${remaining<0?'negative':''}"><span>${kind==='monthly'?'이번 달':'이번 주'} 남음</span><strong>${money(remaining)}원</strong></div></section>`;}
+function settlementCard(rows,used) {
+ const balance=settlementBalance(rows,used);
+ return `<section class="card settlement"><h2>${icon('spark')}이번 달 정산</h2>
+   <div class="settlement-items">${rows.map(r=>`<div class="pair"><span>${esc(r.name)}</span><b>${money(r.value)}원</b></div>`).join('')}</div>
+   <div class="pair"><span>사용액</span><b>${money(used)}원</b></div>
+   <div class="balance ${balance<0?'negative':''}"><span>정산 잔액</span><strong>${money(balance)}원</strong></div></section>`;
+}
 function render(){
  const c=monthData(state,month),ws=weeks(month),current=selected.startsWith(month)?weekStart(selected):ws[0],t=totals(state,month,current),isCurrent=month===today().slice(0,7)&&current===weekStart(today());
  $('#app').innerHTML=`<header><div class="brand"><img src="/assets/planner/hello.webp" alt="쿠로미"/><div><h1>뽀 가계부</h1></div></div><div class="month-switch"><button id="prev" aria-label="이전 달">${icon('prev')}</button><button type="button" id="pick-month" popovertarget="month-menu" aria-label="${month.slice(0,4)}년 ${+month.slice(5)}월, 월 선택">${month.slice(0,4)}년 ${+month.slice(5)}월</button><div id="month-menu" popover aria-label="월 선택"></div><button id="next" aria-label="다음 달">${icon('next')}</button></div><div class="account">${demo?'<span class="demo-label">체험 모드 · 이 기기에만 저장</span>':user?`<span>${esc(user.displayName||'Google 계정')}</span>`:''}${btn('login',user?'로그아웃':'Google 로그인','heart',user?'':'primary')}${!user?btn('demo',demo?'체험 종료':'테스트 데이터로 체험','spark'):''}</div></header>
  <div class="topline"><nav class="page-switch" aria-label="가계부 페이지"><button id="page-calendar" aria-pressed="${activePage === 'calendar'}">${icon('calendar')}달력</button><button id="page-report" aria-pressed="${activePage === 'report'}">${icon('report')}월간 리포트</button><button id="page-fixed" aria-pressed="${activePage === 'fixed'}">${icon('wallet')}고정지출</button><button id="open-plan" ${canEdit()?'':'disabled'}>${icon('memo')}이달의 계획</button></nav><p role="status" aria-live="polite" id="status">${esc(status)}</p><nav aria-label="데이터 관리"><button id="category-manage" ${canEdit()?'':'disabled'}>${icon('edit')}카테고리 관리</button>${btn('export','내보내기','download')}${btn('import','가져오기','restore')}${btn('trash','휴지통','trash')}${failed?btn('retry','다시 저장')+btn('reload','최신 데이터 불러오기'):''}</nav></div>
- ${activePage === 'report' ? reportPage(state,month) : activePage === 'fixed' ? fixedPage(c,month) : `<main><aside class="left"><section class="card settlement"><h2>${icon('spark')}이번 달 정산</h2>${c.settlement.map(r=>`<div class="pair"><span>${esc(r.name)}</span><b>${money(r.value)}원</b></div>`).join('')}</section>${budgetCard('이번 달 예산','monthly',t.used,t.remaining,c.budget)}${budgetCard(isCurrent?'이번 주 예산':'선택한 주 예산','weekly',t.weekUsed,t.weekRemaining,c.weeks[current]||0)}<p class="week-range">${weekLabel(current,month)}<br>월요일~일요일 · 현재 월 날짜만 합산</p></aside>
+ ${activePage === 'report' ? reportPage(state,month) : activePage === 'fixed' ? fixedPage(c,month) : `<main><aside class="left">${settlementCard(c.settlement,t.used)}${budgetCard('이번 달 예산','monthly',t.used,t.remaining,c.budget)}${budgetCard(isCurrent?'이번 주 예산':'선택한 주 예산','weekly',t.weekUsed,t.weekRemaining,c.weeks[current]||0)}<p class="week-range">${weekLabel(current,month)}<br>월요일~일요일 · 현재 월 날짜만 합산</p></aside>
  <section class="card calendar-card" aria-label="월간 달력"><div class="calendar-title"><h2>${icon('calendar')}${month.slice(0,4)}년 ${+month.slice(5)}월</h2>${btn('today','오늘','','quiet')}</div><div class="calendar"><div class="weekdays">${['월','화','수','목','금','토','일'].map(x=>`<span>${x}</span>`).join('')}</div><div class="days">${calendar()}</div></div></section>
- <aside class="right"><section class="card memo"><h2>${icon('memo')}월별 계획·메모</h2><p class="saved-plan">${esc(c.memo || '저장된 계획이 없어요.')}</p></section><section class="card detail"><div class="detail-title"><h2>${icon('calendar')}${+selected.slice(5,7)}월 ${+selected.slice(8)}일</h2><span>${['일','월','화','수','목','금','토'][new Date(selected+'T12:00:00').getDay()]}요일</span></div><div class="day-summary"><span>선택일 합계</span><strong>${money(dayTotal(state,selected))}원</strong></div><div id="entries">${entryRows()}</div>${c.dayNotes?.[selected] ? `<p class="saved-day-note"><b>날짜 메모</b>${esc(c.dayNotes[selected])}</p>` : ''}${selected<=today()?`<button id="detail-add" class="primary wide">${icon('add')} 지출·메모 입력</button><div class="zero-control">${btn('zero',stamped(state,selected)?'무지출 확인 취소':'무지출로 확인','stamp','quiet wide')}<small>기록하지 않은 날은 도장을 찍지 않아요.</small></div>`:'<p class="muted">미래 날짜는 아직 기록할 수 없어요.</p>'}</section></aside></main>`}
+ <aside class="right"><section class="card memo"><h2>${icon('memo')}월별 계획·메모</h2><button type="button" id="edit-plan-memo" class="saved-plan" aria-label="월별 계획·메모 편집">${esc(c.memo || '눌러서 이번 달 계획을 적어보세요.')}</button></section><section class="card detail"><div class="detail-title"><h2>${icon('calendar')}${+selected.slice(5,7)}월 ${+selected.slice(8)}일</h2><span>${['일','월','화','수','목','금','토'][new Date(selected+'T12:00:00').getDay()]}요일</span></div><div class="day-summary"><span>선택일 합계</span><strong>${money(dayTotal(state,selected))}원</strong></div><div id="entries">${entryRows()}</div>${c.dayNotes?.[selected] ? `<p class="saved-day-note"><b>날짜 메모</b>${esc(c.dayNotes[selected])}</p>` : ''}${selected<=today()?`<button id="detail-add" class="primary wide">${icon('add')} 지출·메모 입력</button><div class="zero-control">${btn('zero',stamped(state,selected)?'무지출 확인 취소':'무지출로 확인','stamp','quiet wide')}<small>기록하지 않은 날은 도장을 찍지 않아요.</small></div>`:'<button id="detail-add" class="primary wide">날짜 메모 입력</button>'}</section></aside></main>`}
  <div class="bottom"><span>외부 백업: 내보낸 파일을 별도 보관해주세요.</span></div>${undo?`<div class="toast" role="status">휴지통으로 이동했어요. ${btn('undo','되돌리기','restore')}</div>`:''}<dialog id="dialog"></dialog><input id="file" type="file" accept="application/json,.json" hidden>`;
  bind();if(!canEdit())document.querySelectorAll('main:not(.report-layout) input,main:not(.report-layout) textarea,main:not(.report-layout) button:not(#prev):not(#next):not(#today):not(.day)').forEach(e=>e.disabled=true);
 }
@@ -174,7 +181,7 @@ function bind(){
    button.onclick = () => {
      selected = button.dataset.date;
      render();
-     if (canEdit()) openDayEditor(selected);
+     $('.day.selected').focus({preventScroll:true});
    };
  });
  document.querySelectorAll('[data-edit]').forEach(e=>e.onclick=()=>{const id=e.dataset.edit;modal('지출 수정',numberField('금액','amount',state.entries[id].amount)+`${expenseDetails(state,state.entries[id])}`,async f=>{const v=amount(f.get('amount'));if(!v)throw Error('0원은 지출 삭제 후 무지출 확인을 사용해주세요.');await change(s=>revise(s,id,{amount:v,note:String(f.get('use')||'').trim(),purchase:f.get('purchase').trim(),categoryId:f.get('categoryId')||''},'지출 수정'));});bindCategories($('#modal-form'),state,hideMerchant);});
@@ -183,6 +190,13 @@ function bind(){
  on('undo',()=>{const id=undo;undo=null;change(s=>revise(s,id,{deleted:false},'삭제 되돌리기'));});
  on('zero',()=>{if(dayTotal(state,selected)>0){statusText('지출이 있는 날짜는 무지출로 확인할 수 없어요.');return;}change(s=>{s.closed[selected]=!s.closed[selected];});});
  on('open-plan', openMonthlyPlan);
+ on('edit-plan-memo',()=>{
+   const key=month;
+   modal(key+' 월별 계획·메모',`<label>계획·메모<textarea name="memo" rows="6" maxlength="10000">${esc(monthData(state,key).memo)}</textarea></label>`,form=>{
+     return change(next=>{next.months[key]={...monthData(next,key),memo:form.get('memo')};});
+   });
+   $('#dialog textarea').focus();
+ });
  on('detail-add',()=>openDayEditor(selected));
  on('trash',trash);on('export',()=>download(state));on('import',()=>{if(!canEdit()){statusText('체험 모드 또는 로그인 후 저장 가능한 상태에서 가져와주세요.');return;}$('#file').click();});$('#file').onchange=importFile;
  on('retry',()=>{if(!failed)return;if(!pending){connect(user);return;}failed=false;ready=true;persist(structuredClone(state));});on('reload',()=>{modal('최신 데이터 불러오기','<p>현재 입력을 파일로 내보낸 뒤 서버의 최신 기록을 불러옵니다.</p><button type="button" id="reload-confirm">파일 보관 후 불러오기</button>');on('reload-confirm',()=>{download(state);pending=false;busy=false;failed=false;if(demo)startDemo();else connect(user);});});
