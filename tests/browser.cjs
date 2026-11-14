@@ -10,6 +10,32 @@ async function run() {
       page.on('pageerror', e => errors.push(e.message));
       await page.goto(process.argv[2], {waitUntil:'domcontentloaded'});
       await page.click('#demo');
+      const trigger = page.locator('#pick-month');
+      const initialMonth = await trigger.innerText();
+      const currentYear = Number(initialMonth.split('년')[0]);
+      await trigger.click();
+      const picker = page.locator('#month-menu');
+      assert.equal(await picker.locator('[data-month]').count(),12);
+      const pickerBox = await picker.boundingBox();
+      assert.ok(pickerBox.x >= 0 && pickerBox.x+pickerBox.width <= width);
+      await picker.getByRole('button',{name:'이전 연도'}).click();
+      await picker.getByRole('button',{name:'12월',exact:true}).click();
+      assert.equal(await trigger.innerText(),(currentYear-1)+'년 12월');
+      assert.equal(await page.locator('.day.selected').getAttribute('data-date'),(currentYear-1)+'-12-01');
+      await trigger.click();
+      await picker.getByRole('button',{name:'다음 연도'}).click();
+      await picker.getByRole('button',{name:initialMonth.split('년 ')[1],exact:true}).click();
+      await trigger.click();
+      await page.keyboard.press('Escape');
+      assert.equal(await picker.isVisible(),false);
+      await page.evaluate(()=>document.fonts.ready);
+      assert.ok(await page.evaluate(()=>[...document.fonts].some(face=>face.family.includes('Jalnan') && face.status==='loaded')
+        && ['.brand h1','#pick-month'].every(s=>getComputedStyle(document.querySelector(s)).fontFamily.startsWith('"Jalnan 2"'))));
+      assert.equal(await page.locator('.monthly .budget-top strong').innerText(),'0원');
+      assert.ok(await page.evaluate(()=>{
+        const size = id=>parseFloat(getComputedStyle(document.getElementById(id)).fontSize);
+        return size('zero') === size('detail-add') && size('zero') >= 16;
+      }));
       await page.click('#zero');
       assert.equal(await page.locator('.day.selected .stamp').count(),1);
       await page.evaluate(()=>document.fonts.ready);
