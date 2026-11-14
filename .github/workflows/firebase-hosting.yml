@@ -37,10 +37,12 @@ jobs:
         id: cloud
         with:
           project_id: bbo-s-household-account
+          service_account: bbo-hosting-ci@bbo-s-household-account.iam.gserviceaccount.com
+          token_format: access_token
           workload_identity_provider: projects/1006323120009/locations/global/workloadIdentityPools/bbo-github/providers/main
       - name: Release to live Hosting
         env:
-          HOSTING_TOKEN: ${{ steps.cloud.outputs.auth_token }}
+          HOSTING_TOKEN: ${{ steps.cloud.outputs.access_token }}
         run: node scripts/release-hosting.mjs
       - name: Check live revision
         run: |
