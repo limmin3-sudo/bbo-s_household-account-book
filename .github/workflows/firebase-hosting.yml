@@ -1,0 +1,48 @@
+name: Deploy 뽀 가계부 to Firebase Hosting
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bbo-firebase-live
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: Install locked dependencies
+        run: |
+          npm install --global pnpm@11.25.0
+          pnpm install --frozen-lockfile
+      - name: Test and build
+        run: |
+          node --test tests/model.test.js
+          pnpm run build
+          printf '%s\n' "$GITHUB_SHA" > dist/revision.txt
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: bbo-s-household-account
+          workload_identity_provider: projects/1006323120009/locations/global/workloadIdentityPools/bbo-github/providers/main
+      - name: Release to live Hosting
+        run: pnpm exec firebase deploy --project bbo-s-household-account --only hosting --non-interactive --message "$GITHUB_SHA"
+      - name: Check live revision
+        run: |
+          for attempt in {1..12}; do
+            if [[ "$(curl -fsS --max-time 10 "https://bbo-s-household-account.web.app/revision.txt?run=$GITHUB_RUN_ID-$attempt")" == "$GITHUB_SHA" ]]; then exit 0; fi
+            sleep 5
+          done
+          exit 1

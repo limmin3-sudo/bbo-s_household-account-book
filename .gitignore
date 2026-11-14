@@ -4,3 +4,4 @@ dist/
 *-debug.log
 test-results/
 .env.local
+gha-creds-*.json
