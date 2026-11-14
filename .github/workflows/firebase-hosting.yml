@@ -34,11 +34,14 @@ jobs:
           pnpm run build
           printf '%s\n' "$GITHUB_SHA" > dist/revision.txt
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        id: cloud
         with:
           project_id: bbo-s-household-account
           workload_identity_provider: projects/1006323120009/locations/global/workloadIdentityPools/bbo-github/providers/main
       - name: Release to live Hosting
-        run: pnpm exec firebase deploy --project bbo-s-household-account --only hosting --non-interactive --message "$GITHUB_SHA"
+        env:
+          HOSTING_TOKEN: ${{ steps.cloud.outputs.auth_token }}
+        run: node scripts/release-hosting.mjs
       - name: Check live revision
         run: |
           for attempt in {1..12}; do
