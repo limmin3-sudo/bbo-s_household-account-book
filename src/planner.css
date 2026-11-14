@@ -90,3 +90,23 @@ button:disabled { opacity:.68; }
   .detail .empty-day .icon{width:clamp(70px,11vh,140px);height:clamp(70px,11vh,140px)}
 }
 @media(max-width:900px){header::after{right:0;top:-7px;width:35px}}
+
+.page-switch button[aria-pressed="true"] { background:var(--ribbon) center/100% 100%; color:white; }
+.topline .page-switch button { font-size:15px; }
+main.report-layout { display:block; height:auto; min-height:0; }
+.report-page { max-width:1100px; margin:auto; }
+.report-body { padding:clamp(12px,2vw,32px); display:grid; gap:clamp(12px,2vh,24px); }
+.report-totals { display:grid; grid-template-columns:1.3fr 1fr 1fr; gap:12px; }
+.report-totals>div { border:1px solid var(--rule); border-radius:12px; background:#fcf6ff; padding:clamp(8px,1.2vw,18px); display:grid; align-content:start; gap:5px; min-width:0; }
+.report-totals>div:first-child { background:#efdef7; }
+.report-totals span,.report-chart h3 { font:400 clamp(16px,1.3vw,22px) Jua,sans-serif; color:#5e386d; }
+.report-totals strong { font-size:clamp(18px,1.8vw,32px); overflow-wrap:anywhere; }
+.report-chart { padding:12px 16px; background:white; border:1px solid var(--rule); border-radius:12px; }
+.report-chart h3 { margin:0; }.report-chart p { margin:5px 0 12px; color:#745e7d; font-size:12px; }
+.daily-plot { height:clamp(100px,19vh,220px); display:flex; gap:2px; margin:12px 0 18px; border-bottom:1px solid #a688b0; background:repeating-linear-gradient(to top,transparent 0 calc(25% - 1px),#eee2f1 calc(25% - 1px) 25%); }
+.daily-plot button.plot-day { display:flex; justify-content:flex-end; flex-direction:column; align-items:stretch; flex:1 1 0; min-width:0; min-height:0; height:100%; position:relative; padding:0; border:0; border-radius:0; background:transparent; }
+.plot-day i,.compare-track i { display:block; background:linear-gradient(#c49ad6,#8b5a9e); border-radius:4px 4px 0 0; }.plot-day i.has-spending { min-height:2px; }
+.plot-day span { position:absolute; top:100%; left:50%; transform:translateX(-50%); font:11px system-ui; color:#72537d; }
+.compare-row {margin-top:12px}.compare-row>div:first-child { display:flex; justify-content:space-between; gap:10px; }
+.compare-track { height:10px; border-radius:6px; background:#f4edf7; margin-top:5px; overflow:hidden; }.compare-track i { height:100%; border-radius:6px; }.compare-row:first-of-type i {background:#b8a7c0}
+@media(max-width:900px){.report-totals{gap:5px;grid-template-columns:1fr 1fr}.report-totals>div:first-child{grid-column:1/-1}.report-totals strong{font-size:18px}.report-body{padding:8px}.report-chart{padding:12px 8px}.daily-plot{gap:1px}}

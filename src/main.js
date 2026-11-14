@@ -1,3 +1,5 @@
+import {reportPage} from './report.js';
+let activePage = 'calendar';
 import './style.css';
 import './planner.css';
 import {initializeApp} from 'firebase/app';
@@ -33,12 +35,12 @@ function budgetCard(title,kind,used,remaining,value){return `<section class="car
 function render(){
  const c=monthData(state,month),ws=weeks(month),current=selected.startsWith(month)?weekStart(selected):ws[0],t=totals(state,month,current),isCurrent=current===weekStart(today());
  $('#app').innerHTML=`<header><div class="brand"><img src="/assets/planner/hello.webp" alt="쿠로미"/><div><h1>뽀 가계부</h1></div></div><div class="month-switch"><button id="prev" aria-label="이전 달">${icon('prev')}</button><strong>${month.slice(0,4)}년 ${+month.slice(5)}월</strong><button id="next" aria-label="다음 달">${icon('next')}</button></div><div class="account">${demo?'<span class="demo-label">체험 모드 · 이 기기에만 저장</span>':user?`<span>${esc(user.displayName||'Google 계정')}</span>`:''}${btn('login',user?'로그아웃':'Google 로그인','heart',user?'':'primary')}${!user?btn('demo',demo?'체험 종료':'테스트 데이터로 체험','spark'):''}</div></header>
- <div class="topline"><p role="status" aria-live="polite" id="status">${esc(status)}</p><nav aria-label="데이터 관리">${btn('export','내보내기','download')}${btn('import','가져오기','restore')}${btn('trash','휴지통','trash')}${failed?btn('retry','다시 저장')+btn('reload','최신 데이터 불러오기'):''}</nav></div>
- <main><aside class="left"><section class="card settlement"><h2>${icon('spark')}이번 달 정산</h2>${c.settlement.map(r=>`<div class="pair"><span>${esc(r.name)}</span><b>${money(r.value)}원</b></div>`).join('')}${btn('settlement','정산 항목 편집','edit','quiet wide')}</section>${budgetCard('이번 달 예산','monthly',t.used,t.remaining,c.budget)}${budgetCard(isCurrent?'이번 주 예산':'선택한 주 예산','weekly',t.weekUsed,t.weekRemaining,c.weeks[current]||0)}<p class="week-range">${esc(current)} ~ ${weekEnd(current,month)}<br>월요일~일요일 · 현재 월 날짜만 합산</p></aside>
+ <div class="topline"><nav class="page-switch" aria-label="가계부 페이지"><button id="page-calendar" aria-pressed="${activePage === 'calendar'}">${icon('calendar')}달력</button><button id="page-report" aria-pressed="${activePage === 'report'}">${icon('report')}월간 리포트</button></nav><p role="status" aria-live="polite" id="status">${esc(status)}</p><nav aria-label="데이터 관리">${btn('export','내보내기','download')}${btn('import','가져오기','restore')}${btn('trash','휴지통','trash')}${failed?btn('retry','다시 저장')+btn('reload','최신 데이터 불러오기'):''}</nav></div>
+ ${activePage === 'report' ? reportPage(state,month) : `<main><aside class="left"><section class="card settlement"><h2>${icon('spark')}이번 달 정산</h2>${c.settlement.map(r=>`<div class="pair"><span>${esc(r.name)}</span><b>${money(r.value)}원</b></div>`).join('')}${btn('settlement','정산 항목 편집','edit','quiet wide')}</section>${budgetCard('이번 달 예산','monthly',t.used,t.remaining,c.budget)}${budgetCard(isCurrent?'이번 주 예산':'선택한 주 예산','weekly',t.weekUsed,t.weekRemaining,c.weeks[current]||0)}<p class="week-range">${esc(current)} ~ ${weekEnd(current,month)}<br>월요일~일요일 · 현재 월 날짜만 합산</p></aside>
  <section class="card calendar-card" aria-label="월간 달력"><div class="calendar-title"><h2>${icon('calendar')}${month.slice(0,4)}년 ${+month.slice(5)}월</h2>${btn('today','오늘','','quiet')}</div><div class="calendar"><div class="weekdays">${['월','화','수','목','금','토','일'].map(x=>`<span>${x}</span>`).join('')}</div><div class="days">${calendar()}</div></div></section>
- <aside class="right"><section class="card memo"><h2>${icon('memo')}월별 계획·메모</h2><textarea id="memo" maxlength="10000" aria-label="월별 계획·메모" placeholder="이달의 목표와 메모를 적어보세요." ${!canEdit()?'disabled':''}>${esc(c.memo)}</textarea>${btn('memo-save','메모 저장','heart','quiet wide')}</section><section class="card detail"><div class="detail-title"><h2>${icon('calendar')}${+selected.slice(5,7)}월 ${+selected.slice(8)}일</h2><span>${['일','월','화','수','목','금','토'][new Date(selected+'T12:00:00').getDay()]}요일</span></div><div class="day-summary"><span>선택일 합계</span><strong>${money(dayTotal(state,selected))}<small>원</small></strong></div><div id="entries">${entryRows()}</div>${selected<=today()?`<form id="add-form"><label class="use-label" for="use">사용처 <small>선택</small></label><input id="use" maxlength="80" placeholder="예: 점심, 장보기" autocomplete="off"><label for="amount">금액</label><div class="amount-input"><input id="amount" name="amount" inputmode="numeric" autocomplete="off" placeholder="0" aria-label="지출 금액" required><span>원</span></div>${btn('add','금액 추가','add','primary wide')}</form><div class="zero-control">${btn('zero',stamped(state,selected)?'무지출 확인 취소':'무지출로 확인','stamp','quiet wide')}<small>기록하지 않은 날은 도장을 찍지 않아요.</small></div>`:'<p class="muted">미래 날짜는 아직 기록할 수 없어요.</p>'}</section></aside></main>
+ <aside class="right"><section class="card memo"><h2>${icon('memo')}월별 계획·메모</h2><textarea id="memo" maxlength="10000" aria-label="월별 계획·메모" placeholder="이달의 목표와 메모를 적어보세요." ${!canEdit()?'disabled':''}>${esc(c.memo)}</textarea>${btn('memo-save','메모 저장','heart','quiet wide')}</section><section class="card detail"><div class="detail-title"><h2>${icon('calendar')}${+selected.slice(5,7)}월 ${+selected.slice(8)}일</h2><span>${['일','월','화','수','목','금','토'][new Date(selected+'T12:00:00').getDay()]}요일</span></div><div class="day-summary"><span>선택일 합계</span><strong>${money(dayTotal(state,selected))}<small>원</small></strong></div><div id="entries">${entryRows()}</div>${selected<=today()?`<form id="add-form"><label class="use-label" for="use">사용처 <small>선택</small></label><input id="use" maxlength="80" placeholder="예: 점심, 장보기" autocomplete="off"><label for="amount">금액</label><div class="amount-input"><input id="amount" name="amount" inputmode="numeric" autocomplete="off" placeholder="0" aria-label="지출 금액" required><span>원</span></div>${btn('add','금액 추가','add','primary wide')}</form><div class="zero-control">${btn('zero',stamped(state,selected)?'무지출 확인 취소':'무지출로 확인','stamp','quiet wide')}<small>기록하지 않은 날은 도장을 찍지 않아요.</small></div>`:'<p class="muted">미래 날짜는 아직 기록할 수 없어요.</p>'}</section></aside></main>`}
  <div class="bottom"><span>외부 백업: 내보낸 파일을 별도 보관해주세요.</span></div>${undo?`<div class="toast" role="status">휴지통으로 이동했어요. ${btn('undo','되돌리기','restore')}</div>`:''}<dialog id="dialog"></dialog><input id="file" type="file" accept="application/json,.json" hidden>`;
- bind();if(!canEdit())document.querySelectorAll('main input,main textarea,main button:not(#prev):not(#next):not(#today):not(.day)').forEach(e=>e.disabled=true);
+ bind();if(!canEdit())document.querySelectorAll('main:not(.report-layout) input,main:not(.report-layout) textarea,main:not(.report-layout) button:not(#prev):not(#next):not(#today):not(.day)').forEach(e=>e.disabled=true);
 }
 function weekEnd(w,m){const d=new Date(w+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+6);const end=d.toISOString().slice(0,10);const last=`${m}-${new Date(+m.slice(0,4),+m.slice(5),0).getDate()}`;return end>last?last:end;}
 function calendar(){const first=month+'-01',offset=(new Date(first+'T12:00:00').getDay()+6)%7,n=new Date(+month.slice(0,4),+month.slice(5),0).getDate();let html='<div class="blank" aria-hidden="true"></div>'.repeat(offset);for(let d=1;d<=n;d++){const date=month+'-'+String(d).padStart(2,'0'),v=dayTotal(state,date);html+=`<button class="day ${date===selected?'selected':''} ${date===today()?'is-today':''}" data-date="${date}" aria-label="${date}, ${money(v)}원${stamped(state,date)?', 무지출 성공':''}" aria-pressed="${date===selected}"><span class="day-number">${d}</span>${v?`<span class="day-amount">${money(v).replaceAll(',',',<wbr>')}</span>`:stamped(state,date)?'<span class="stamp"><img src="/assets/planner/no-spend.svg" alt="무지출성공!"></span>':''}</button>`;}return html+'<div class="blank" aria-hidden="true"></div>'.repeat((7-(offset+n)%7)%7);}
@@ -47,6 +49,21 @@ function on(id,fn){const e=$('#'+id);if(e)e.onclick=fn;}
 function modal(title,content,submit){const d=$('#dialog');d.innerHTML=`<form id="modal-form"><div class="modal-head"><h2>${title}</h2><button type="button" id="close-dialog" aria-label="닫기">×</button></div>${content}<p id="modal-error" role="alert"></p>${submit?btn('modal-save','저장','heart','primary wide'):''}</form>`;d.showModal();on('close-dialog',()=>d.close());if(submit)$('#modal-form').onsubmit=async e=>{e.preventDefault();try{await submit(new FormData(e.target));d.close();}catch(e){$('#modal-error').textContent=e.message;}};}
 function numberField(label,name,value){return `<label>${esc(label)}<input name="${name}" inputmode="numeric" value="${value}" required></label>`;}
 function bind(){
+ for (const page of ['calendar','report']) {
+   on('page-' + page, () => {
+     activePage = page;
+     render();
+     $('#page-' + page).focus();
+   });
+ }
+ document.querySelectorAll('[data-report-date]').forEach(button => {
+   button.onclick = () => {
+     selected = button.dataset.reportDate;
+     activePage = 'calendar';
+     render();
+     $('.day.selected')?.focus();
+   };
+ });
  on('login',async()=>{if(busy||pending){statusText('저장되지 않은 변경사항을 먼저 내보내거나 다시 저장해주세요.');return;}try{if(user)await signOut(auth);else{await signInWithPopup(auth,new GoogleAuthProvider());}}catch(e){statusText('로그인 실패 · '+e.code);}});
  on('demo',()=>{if(busy)return;if(demo){demo=false;connect(null);return;}if(unsub)unsub();demo=true;user=null;state=empty();try{state=validate(JSON.parse(localStorage.getItem('bbo-demo-v1')));}catch{}ready=true;pending=false;failed=false;status='체험 모드 · 실제 계정과 분리된 테스트 데이터';render();});
  on('prev',()=>moveMonth(-1));on('next',()=>moveMonth(1));on('today',()=>{month=today().slice(0,7);selected=today();render();});
@@ -72,6 +89,7 @@ function download(s,prefix='bbo-export'){const body=JSON.stringify({format:'bbo-
 async function importFile(e){try{const file=e.target.files[0];if(!file)return;if(file.size>1500000)throw Error('가져오기 파일이 너무 큽니다.');const f=JSON.parse(await file.text());if(f.format!=='bbo-household'||f.version!==1)throw Error('뽀 가계부 내보내기 파일이 아닙니다.');const imported=validate(f.data);modal('파일 검증 완료',`<p>지출 ${Object.keys(imported.entries).length}건 · 월 설정 ${Object.keys(imported.months).length}개</p><p>현재 기록을 파일로 먼저 내보내고, 선택한 파일로 전체 복원합니다. 다운로드를 보관해주세요.</p><button type="button" id="import-confirm" class="primary">현재 기록 내보내기 후 전체 복원</button>`);on('import-confirm',async()=>{download(state,'bbo-before-restore');$('#dialog').close();await persist(imported);});}catch(e){statusText('가져오기 실패 · '+e.message);}}
 window.addEventListener('beforeunload',e=>{if(pending||busy){e.preventDefault();e.returnValue='';}});
 render();onAuthStateChanged(auth,u=>{if(!u&&demo)return;connect(u);});
+
 
 
 
