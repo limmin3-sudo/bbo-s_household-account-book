@@ -53,12 +53,13 @@ button:disabled { opacity:.68; }
 .calendar-card { display:flex; flex-direction:column; gap:7px; }
 .calendar { display:flex; flex-direction:column; flex:1; min-height:0; }
 .weekdays { background:#ecdaf5; }.weekdays span { font-size:18px; color:#4d315b; padding:6px 0; }.weekdays span:nth-child(6){color:#845799}.weekdays span:last-child{color:#af4676}
-.days { flex:1; grid-auto-rows:minmax(0,1fr); border-color:#bc9dca; }
+.days { flex:1; min-height:0; grid-template-rows:repeat(var(--calendar-weeks),minmax(0,1fr)); border-color:#bc9dca; }
 .day,.blank { border-color:#c7b1d2; height:auto; min-height:0; background:#fffcff; }
 .blank { background:#f4edf7; }.day.selected { background:#f1dff7; box-shadow:inset 0 0 0 2px #9060a4; }
 .day { padding:6px; gap:2px; }
-.day-number { font:400 clamp(15px,1.12vw,24px) Jua,sans-serif; }
-.day-amount { margin-top:auto; padding-bottom:4px; font-size:clamp(12px,1vw,20px); }
+.day-number { font:400 clamp(15px,1.12vw,24px)/1.1 Jua,sans-serif; }
+.day-amount { margin-top:auto; padding-bottom:2px; font-size:clamp(12px,1vw,20px); line-height:1.12; }
+.day:has(.calendar-note) {padding-block:3px}
 .stamp { flex:1; min-height:0; justify-content:center; }.stamp img { width:95%; height:100%; max-height:76px; object-fit:contain; }
 .memo textarea { margin:8px 0 0; min-height:70px; max-height:110px; padding:4px 7px; font-size:15px; }
 .detail { display:flex; flex-direction:column; min-height:0; gap:6px; }.day-summary { flex-direction:row; align-items:center; justify-content:space-between; background:#eeddf6; border-radius:5px; padding:8px 12px; }.day-summary strong {font-size:22px}
@@ -69,7 +70,7 @@ button:disabled { opacity:.68; }
 .amount-input { margin:0; }.amount-input>span {top:10px}.amount-input input,#use { padding-top:7px; padding-bottom:7px; }
 .zero-control { margin-top:auto; padding-top:7px; }.zero-control small {margin-top:4px}.zero-control .icon {width:35px;height:35px}.bottom {padding:5px 4px}
 @media(min-width:901px) {
-  main { grid-template-columns:minmax(190px,.91fr) minmax(0,1.95fr) minmax(230px,1.08fr); gap:10px; height:calc(100dvh - 185px); min-height:605px; }
+  main { grid-template-columns:minmax(190px,.91fr) minmax(0,1.95fr) minmax(230px,1.08fr); gap:10px; }
   .left,.right { height:100%; display:flex; flex-direction:column; }
   .left .card { flex-shrink:0; }.settlement-items { max-height:max(130px,16vh); overflow:auto; }
   .calendar-card { height:100%; }.detail { flex:1; }
@@ -180,7 +181,7 @@ dialog input {font-family:var(--ui-font)}
 .category-breakdown li {display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;border-top:1px solid var(--rule);padding:8px 0}
 .category-breakdown li span{overflow-wrap:anywhere}
 @media(min-width:901px){.detail{overflow:auto}.detail > :not(#entries){flex-shrink:0}.detail .zero-control{margin-top:0}}
-@media(min-width:901px){main:not(.report-layout){grid-template-rows:minmax(0,1fr)}.right,.left{min-height:0}.detail #detail-add{margin:10px 0}.detail .empty-day .icon{width:clamp(65px,9vh,108px);height:clamp(65px,9vh,108px)}}
+@media(min-width:901px){main:not(.report-layout){grid-template-rows:minmax(0,1fr) auto}.right,.left{min-height:0}.detail #detail-add{margin:10px 0}.detail .empty-day .icon{width:clamp(65px,9vh,108px);height:clamp(65px,9vh,108px)}}
 
 .day-number,.day-amount {flex-shrink:0}
 .calendar-note {
@@ -221,9 +222,45 @@ dialog input {font-family:var(--ui-font)}
 #month-menu .picker-year button {width:40px;background:transparent;border:0;box-shadow:none;padding:0}
 #app #month-menu button[aria-pressed=true] {border-radius:18px;background:#785198 url('/assets/planner/pill-purple.svg') center/100% 100%;color:white}
 .detail #detail-add,.detail #zero {font-size:clamp(16px,1.05vw,22px)}
+#app:has(.calendar-card) {
+  height:100dvh;display:grid;grid-template-rows:auto auto minmax(0,1fr);
+}
+#app:has(.calendar-card) > :is(main,.topline) {min-height:0;min-width:0;width:100%;margin:0}
+#app:has(.calendar-card) > header {width:100%;margin:0}
+main > .bottom {grid-column:1/-1;width:100%}
+.calendar-card {min-height:0;align-self:stretch}
+.calendar-title,.weekdays {flex-shrink:0}
+@media(min-width:901px) and (max-height:760px) {
+  #app {padding-block:6px}
+  header {min-height:54px}
+  .brand>img {height:48px;width:54px}
+  .account {gap:4px}
+  .account>span {font-size:11px}
+  #app header .account button:not(#prev):not(#next) {min-height:26px;padding:2px 7px;font-size:12px}
+  .account .icon {width:17px;height:17px}
+  .calendar-title {min-height:32px;padding-block:2px}
+  .weekdays span {padding-block:2px}
+  .day {padding:3px;gap:1px}
+  .day:has(.calendar-note) {padding-block:1px}
+  .day-number {font-size:clamp(13px,2.1dvh,17px);line-height:1.1;padding-block:0}
+  .day-amount {font-size:clamp(10px,1.9dvh,14px);padding-bottom:0}
+  .calendar-note {font-size:clamp(10px,1.7dvh,13px);line-height:1.15;-webkit-line-clamp:1}
+  .left,.right {gap:4px}
+  .left .card {border-width:6px}
+  .left .card>h2 {min-height:29px;padding-block:3px;margin-bottom:2px}
+  .left .pair>*,.left .balance>*,.left .budget-top>* {padding-block:2px}
+  .topline {display:grid;grid-template-columns:auto 1fr;gap:2px 8px}
+  .topline #status {grid-row:2;grid-column:1/-1}
+  .topline nav:last-child {justify-self:end}
+  #app .topline button {padding:3px 7px;min-height:28px;font-size:13px}
+  .topline .icon {width:16px;height:16px}
+}
 @media(max-width:900px) {
-  .day:has(.calendar-note){height:auto;min-height:83px}
-  .days:has(.calendar-note) {grid-auto-rows:minmax(86px,auto)}
-  .day,.blank {align-self:stretch}
+  main:has(.calendar-card) {grid-template-rows:100% auto auto auto}
+  .calendar-card {grid-row:1}
+  .day,.blank {height:auto;min-height:0;align-self:stretch}
+  .day {gap:1px;padding:2px}
+  .day-number {line-height:1.1}
+  .day-amount {padding-bottom:0}
   .calendar-note {font-size:11px}
 }

@@ -195,9 +195,9 @@ async function run() {
       const bounds = await recordedCell.evaluate(cell => {
         const note = cell.querySelector('.calendar-note').getBoundingClientRect();
         const amount = cell.querySelector('.day-amount').getBoundingClientRect();
-        return note.height > 8 && note.bottom <= amount.top + 1 && amount.bottom <= cell.getBoundingClientRect().bottom + 1;
+        return {note:note.toJSON(),amount:amount.toJSON(),cell:cell.getBoundingClientRect().toJSON()};
       });
-      assert.ok(bounds,'Memo and amount must remain visible inside their day at '+width);
+      assert.ok(bounds.note.height>8 && bounds.note.bottom<=bounds.amount.top+1 && bounds.amount.bottom<=bounds.cell.bottom+1,'Memo and amount must remain visible inside their day at '+width+' '+JSON.stringify(bounds));
       assert.equal(await page.locator('.entry').count(),1);
       assert.equal(await page.locator('.saved-plan').innerText(),'이번 달 여행 준비');
       await page.click('#page-fixed');
