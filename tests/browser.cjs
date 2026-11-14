@@ -4,14 +4,24 @@ const fs = require('node:fs/promises');
 async function run() {
   const browser = await chromium.launch({channel:'chrome',headless:true});
   try {
-    for (const width of [1440,393]) {
-      const page = await browser.newPage({viewport:{width,height:width===393?852:1000}});
+    for (const [width,height] of [[1920,940],[2560,1300],[1440,810],[393,852]]) {
+      const page = await browser.newPage({viewport:{width,height}});
       const errors = [];
       page.on('pageerror', e => errors.push(e.message));
       await page.goto(process.argv[2], {waitUntil:'domcontentloaded'});
       await page.click('#demo');
       await page.click('#zero');
       assert.equal(await page.locator('.day.selected .stamp').count(),1);
+      await page.evaluate(()=>document.fonts.ready);
+      if(width>=1440){
+        const dimensions=await page.evaluate(()=>({
+          height:document.documentElement.scrollHeight,width:document.documentElement.scrollWidth,
+          viewport:innerHeight,broken:[...document.images].filter(i=>i.complete&&!i.naturalWidth).length
+        }));
+        assert.ok(dimensions.height<=height && dimensions.width<=width,JSON.stringify(dimensions));
+        assert.equal(dimensions.broken,0);
+      }
+      await page.fill('#use','테스트 점심');
       await page.fill('#amount','999999999999');
       await page.click('#add');
       assert.equal(await page.locator('.day.selected .stamp').count(),0);
@@ -23,8 +33,11 @@ async function run() {
       });
       assert.ok(fits,'calendar amount overflow at '+width);
       await page.click('[data-edit]');
+      assert.equal(await page.locator('[name=note]').inputValue(),'테스트 점심');
+      await page.fill('[name=note]','수정한 사용처');
       await page.fill('#modal-form [name=amount]','162000');
       await page.click('#modal-save');
+      assert.equal(await page.locator('.entry-note').textContent(),'수정한 사용처');
       await page.click('#week-budget');
       const w = await page.locator('.week-range').innerText();
       await page.fill('input[name="'+w.slice(0,10)+'"]','150000');
@@ -44,6 +57,7 @@ async function run() {
       await page.click('[data-delete]');
       await page.locator('#file').setInputFiles({name:'restore.json',mimeType:'application/json',buffer:payload});
       await page.click('#import-confirm');
+      assert.equal(await page.locator('.entry-note').textContent(),'테스트 점심');
       assert.equal(await page.locator('.entry').count(),1);
       await page.locator('#file').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{}')});
       assert.match(await page.locator('#status').textContent(),/가져오기 실패/);

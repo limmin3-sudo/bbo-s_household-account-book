@@ -1,10 +1,12 @@
-# 이미지 자산 원장
+# 뽀 가계부 이미지 자산
+사용자가 제공한 원본 시트는 design/sheets에 보관한다. planner의 WebP는 시트에서 각 그림을 잘라 투명 배경을 유지한 파일이다.
 
-원본: scripts/assets.mjs의 직접 작성한 SVG 벡터. 빌트인 이모지나 아이콘 폰트를 사용하지 않습니다.
+| 원본 | 화면에서 사용하는 자산 |
+|---|---|
+| characters.png | hello (제목), app (파비콘), purse (빈 내역), seal (무지출 확인 버튼) |
+| controls.png | add, edit, trash, prev, next, calendar, wallet, restore, cloud |
+| planner/no-spend.svg | 원본 purse 그림을 보라색 잉크로 표현한 무지출성공! 도장 |
+| planner/panel.svg, ribbon.svg, key.svg, bow.svg | 크기가 달라지는 패널, 제목 띠, 버튼 표면, 헤더 리본 |
+| 기존 개별 SVG | 메모·이력·내보내기 등 보조 기능 아이콘 |
 
-- kuromi.svg: 쿠로미 캐릭터, 앱 파비콘·헤더·달력 하단
-- stamp.svg: 보라색 쿠로미·하트 도장, 확인된 무지출 날짜·확인 버튼
-- add/edit/trash/restore/history/download.svg: 실제 button 요소 내 기능 그래픽
-- wallet/calendar/memo/spark/heart.svg: 예산·달력·메모 헤더와 버튼
-
-쿠로미 권리: 사용자 제공의 전화 사용 허락 진술에 따라 제작했습니다. 원본 참고 이미지 파일은 이 저장소에 제공되지 않아 인계문의 색상·캐릭터·하트 요구를 바탕으로 벡터로 작성했습니다.
+한글 제목과 버튼에는 public/fonts의 주아체를 사용한다. 이용 조건은 같은 폴더의 OFL.txt에 있다.

@@ -12,13 +12,15 @@ export const stamped=(s,d,now=today())=>d<=now&&s.closed[d]===true&&dayTotal(s,d
 export function validate(s){
  const isMap = value => value !== null && typeof value === 'object' && !Array.isArray(value);
  if(!isMap(s)||s.schema!==1||!['entries','months','closed','history'].every(key=>isMap(s[key]))||Object.keys(s).length!==5)throw Error('지원하지 않는 가계부 파일입니다.');
+ const validNote = entry => entry.note === undefined || (typeof entry.note === 'string' && entry.note.length <= 80);
  const date=d=>/^\d{4}-\d{2}-\d{2}$/.test(d)&&!isNaN(Date.parse(d))&&new Date(d).toISOString().slice(0,10)===d;
  const val=v=>Number.isSafeInteger(v)&&v>=0&&v<=MAX;
  if(Object.keys(s.entries).length>20000)throw Error('기록 수가 너무 많습니다.');
- for(const [id,e] of Object.entries(s.entries))if(!/^[\w-]+$/.test(id)||!date(e.date)||e.date>today()||!val(e.amount)||typeof e.deleted!=='boolean')throw Error('지출 데이터가 올바르지 않습니다.');
+ for(const [id,e] of Object.entries(s.entries))if(!/^[\w-]+$/.test(id)||!validNote(e)||!date(e.date)||e.date>today()||!val(e.amount)||typeof e.deleted!=='boolean')throw Error('지출 데이터가 올바르지 않습니다.');
  for(const [m,c] of Object.entries(s.months)){if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(m)||!val(c.budget)||typeof c.memo!=='string'||c.memo.length>10000||!c.weeks||!Array.isArray(c.settlement)||c.settlement.length>30)throw Error('월 설정이 올바르지 않습니다.');for(const [w,v] of Object.entries(c.weeks))if(!weeks(m).includes(w)||!val(v))throw Error('주 예산이 올바르지 않습니다.');for(const r of c.settlement)if(typeof r.name!=='string'||r.name.length>40||!val(r.value))throw Error('정산이 올바르지 않습니다.');}
  for(const [d,v] of Object.entries(s.closed))if(!date(d)||d>today()||typeof v!=='boolean')throw Error('무지출 확인이 올바르지 않습니다.');
- for(const [id,h] of Object.entries(s.history))if(!/^[\w-]+$/.test(id)||!h||typeof h.at!=='string'||typeof h.reason!=='string'||!h.before||!date(h.before.date)||!val(h.before.amount)||typeof h.before.deleted!=='boolean'||typeof h.entryId!=='string')throw Error('이력이 올바르지 않습니다.');
+ for(const [id,h] of Object.entries(s.history))if(!/^[\w-]+$/.test(id)||!h||typeof h.at!=='string'||typeof h.reason!=='string'||!h.before||!validNote(h.before)||!date(h.before.date)||!val(h.before.amount)||typeof h.before.deleted!=='boolean'||typeof h.entryId!=='string')throw Error('이력이 올바르지 않습니다.');
  if(new TextEncoder().encode(JSON.stringify(s)).length>750000)throw Error('파일이 너무 큽니다. 월별 보관 기능이 필요합니다.');return s;
 }
 export function revise(s,id,patch,reason){const before=s.entries[id];if(before)s.history[crypto.randomUUID()]={entryId:id,before:structuredClone(before),at:new Date().toISOString(),reason};s.entries[id]={...before,...patch};if(!s.entries[id].deleted)s.closed[s.entries[id].date]=false;return s;}
+
