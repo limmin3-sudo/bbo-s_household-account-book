@@ -23,11 +23,35 @@ let state=empty(),month=today().slice(0,7),selected=today(),user=null,demo=false
 function statusText(s){status=s;const e=$('#status');if(e)e.textContent=s;}
 function error(e){statusText('저장 실패 · '+(e.message||e));failed=true;busy=false;render();}
 function canEdit(){return ready&&!busy&&!failed;}
+const demoKey='bbo-demo-v1';
+let demoSource=null;
+function startDemo(){
+ try {
+   const raw=localStorage.getItem(demoKey);
+   const loaded=raw===null ? empty() : validate(JSON.parse(raw));
+   if(unsub)unsub();
+   state=loaded;demoSource=raw;demo=true;user=null;ready=true;pending=false;failed=false;
+   status='체험 모드 · 실제 계정과 분리된 테스트 데이터';render();
+ } catch {
+   ready=false;
+   status='기존 체험 기록을 읽을 수 없어 저장을 중단했습니다. 이 브라우저의 원본은 보존되어 있습니다.';render();
+ }
+}
+async function saveDemo(next){
+ const write=()=>{
+   if(localStorage.getItem(demoKey)!==demoSource)throw Error('다른 창에서 체험 기록이 변경되었습니다. 현재 입력을 내보낸 뒤 최신 기록을 불러와주세요.');
+   const raw=JSON.stringify(next);
+   localStorage.setItem(demoKey,raw);
+   demoSource=raw;
+ };
+ if(navigator.locks)await navigator.locks.request(demoKey,write);
+ else write();
+}
 async function persist(next, keepEditor=false){
  if(!canEdit())return;try{validate(next);}catch(e){statusText(e.message);return;}
  const refresh=()=>keepEditor && $('#dialog')?.open ? statusText(status) : render();
  state=next;pending=true;busy=true;status='저장 중…';refresh();
- try{if(demo){localStorage.setItem('bbo-demo-v1',JSON.stringify(next));}else{const uid=user.uid,base=version;await runTransaction(db,async tx=>{const r=doc(db,'users',uid,'ledgers','main'),snap=await tx.get(r);const current=snap.exists()?snap.data().version:0;if(current!==base)throw Error('다른 기기에서 변경되었습니다. 내보내기로 현재 입력을 보관한 뒤 최신 데이터 불러오기를 눌러주세요.');tx.set(r,{version:base+1,data:next,updatedAt:new Date().toISOString()});});version=base+1;}
+ try{if(demo){await saveDemo(next);}else{const uid=user.uid,base=version;await runTransaction(db,async tx=>{const r=doc(db,'users',uid,'ledgers','main'),snap=await tx.get(r);const current=snap.exists()?snap.data().version:0;if(current!==base)throw Error('다른 기기에서 변경되었습니다. 내보내기로 현재 입력을 보관한 뒤 최신 데이터 불러오기를 눌러주세요.');tx.set(r,{version:base+1,data:next,updatedAt:new Date().toISOString()});});version=base+1;}
  pending=false;busy=false;failed=false;status=demo?'기기에 저장 완료 · 체험 데이터':'서버 저장 완료';refresh();return true;
  }catch(e){error(e);}
 }
@@ -145,7 +169,7 @@ function bind(){
    };
  });
  on('login',async()=>{if(busy||pending){statusText('저장되지 않은 변경사항을 먼저 내보내거나 다시 저장해주세요.');return;}try{if(user)await signOut(auth);else{await signInWithPopup(auth,new GoogleAuthProvider());}}catch(e){statusText('로그인 실패 · '+e.code);}});
- on('demo',()=>{if(busy)return;if(demo){demo=false;connect(null);return;}if(unsub)unsub();demo=true;user=null;state=empty();try{state=validate(JSON.parse(localStorage.getItem('bbo-demo-v1')));}catch{}ready=true;pending=false;failed=false;status='체험 모드 · 실제 계정과 분리된 테스트 데이터';render();});
+ on('demo',()=>{if(busy)return;if(demo){demo=false;connect(null);return;}startDemo();});
  on('prev',()=>moveMonth(-1));on('next',()=>moveMonth(1));on('today',()=>{month=today().slice(0,7);selected=today();render();});
  document.querySelectorAll('[data-date]').forEach(button => {
    button.onclick = () => {
@@ -162,7 +186,7 @@ function bind(){
  on('open-plan', openMonthlyPlan);
  on('detail-add',()=>openDayEditor(selected));
  on('trash',trash);on('export',()=>download(state));on('import',()=>{if(!canEdit()){statusText('체험 모드 또는 로그인 후 저장 가능한 상태에서 가져와주세요.');return;}$('#file').click();});$('#file').onchange=importFile;
- on('retry',()=>{if(!failed)return;if(!pending){connect(user);return;}failed=false;ready=true;persist(structuredClone(state));});on('reload',()=>{modal('최신 데이터 불러오기','<p>현재 입력을 파일로 내보낸 뒤 서버의 최신 기록을 불러옵니다.</p><button type="button" id="reload-confirm">파일 보관 후 불러오기</button>');on('reload-confirm',()=>{download(state);pending=false;busy=false;failed=false;connect(user);});});
+ on('retry',()=>{if(!failed)return;if(!pending){connect(user);return;}failed=false;ready=true;persist(structuredClone(state));});on('reload',()=>{modal('최신 데이터 불러오기','<p>현재 입력을 파일로 내보낸 뒤 서버의 최신 기록을 불러옵니다.</p><button type="button" id="reload-confirm">파일 보관 후 불러오기</button>');on('reload-confirm',()=>{download(state);pending=false;busy=false;failed=false;if(demo)startDemo();else connect(user);});});
 }
 function settlementRow(r,i){return `<div class="settlement-row"><input name="name${i}" value="${esc(r.name)}" aria-label="정산 항목 이름" maxlength="40" required><input name="value${i}" value="${r.value}" aria-label="정산 금액" inputmode="numeric" required><button type="button" data-remove="${i+1}" aria-label="항목 삭제">×</button></div>`;}
 function selectMonth(key) {
