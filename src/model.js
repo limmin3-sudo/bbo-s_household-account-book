@@ -1,3 +1,4 @@
+import {validMerchantRules} from './merchants.js';
 export const MAX=999999999999;
 export const today=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date());
 export function money(v){return (v<0?'−':'')+Math.abs(v).toLocaleString('ko-KR');}
@@ -21,7 +22,7 @@ export function validate(s){
  const isMap = value => value !== null && typeof value === 'object' && !Array.isArray(value);
  if(!isMap(s)||s.schema!==1||!['entries','months','closed','history'].every(key=>isMap(s[key]))||Object.keys(s).some(k=>!['schema','entries','months','closed','history','categories'].includes(k)))throw Error('지원하지 않는 가계부 파일입니다.');
  if(s.categories===undefined)s.categories=defaultCategories();
- if(s.categories!==undefined && (!isMap(s.categories)||Object.entries(s.categories).some(([id,c])=>!/^[-\w]+$/.test(id)||!isMap(c)||typeof c.name!=='string'||!c.name.trim()||c.name.length>40||typeof c.merchant!=='string'||c.merchant.length>80||typeof c.archived!=='boolean')))throw Error('카테고리가 올바르지 않습니다.');
+ if(!isMap(s.categories)||Object.entries(s.categories).some(([id,c])=>!/^[-\w]+$/.test(id)||!isMap(c)||typeof c.name!=='string'||!c.name.trim()||c.name.length>40||typeof c.merchant!=='string'||c.merchant.length>80||typeof c.archived!=='boolean'||(c.merchants!==undefined&&!validMerchantRules(c.merchants))))throw Error('카테고리가 올바르지 않습니다.');
  const validNote = entry => (entry.note === undefined || (typeof entry.note === 'string' && entry.note.length <= 80))
    && (entry.purchase===undefined || (typeof entry.purchase==='string' && entry.purchase.length<=200))
    && (!entry.categoryId || (typeof entry.categoryId==='string' && Object.hasOwn(s.categories||{},entry.categoryId)));

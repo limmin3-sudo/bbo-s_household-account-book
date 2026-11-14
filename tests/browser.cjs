@@ -13,11 +13,25 @@ async function run() {
       const trigger = page.locator('#pick-month');
       const initialMonth = await trigger.innerText();
       const currentYear = Number(initialMonth.split('년')[0]);
+      await page.evaluate(()=>document.fonts.ready);
+      const centered = await page.evaluate(()=>{
+        const box = s=>document.querySelector(s).getBoundingClientRect();
+        const bar=box('header'), month=box('#pick-month');
+        const midY = rect=>rect.top+rect.height/2;
+        return Math.abs(month.left+month.width/2-bar.left-bar.width/2)<1
+          && ['#prev','#next'].every(s=>Math.abs(midY(box(s))-midY(month))<1);
+      });
+      assert.ok(centered,'Header month controls are off-center at '+width);
       await trigger.click();
       const picker = page.locator('#month-menu');
       assert.equal(await picker.locator('[data-month]').count(),12);
       const pickerBox = await picker.boundingBox();
       assert.ok(pickerBox.x >= 0 && pickerBox.x+pickerBox.width <= width);
+      assert.ok(await picker.locator('.picker-year button').evaluateAll(buttons=>buttons.every(b=>{
+        const s=getComputedStyle(b);
+        return s.backgroundImage==='none' && s.backgroundColor==='rgba(0, 0, 0, 0)'
+          && s.borderTopWidth==='0px' && s.boxShadow==='none' && b.clientWidth>=40;
+      })));
       await picker.getByRole('button',{name:'이전 연도'}).click();
       await picker.getByRole('button',{name:'12월',exact:true}).click();
       assert.equal(await trigger.innerText(),(currentYear-1)+'년 12월');
@@ -133,7 +147,7 @@ async function run() {
       assert.match(await page.locator('.fixed-list').innerText(),/21,000/);
       await page.click('#category-manage');
       await page.click('#new-category');
-      assert.equal(await page.locator('.category-row').count(),12);
+      assert.equal(await page.locator('.category-row [name=categoryName]').count(),12);
       await page.locator('[name=categoryName]').last().fill('반려생활');
       await page.locator('.category-row[data-id=online] [name=merchant]').fill('쿠팡');
       await page.click('#modal-save');
@@ -158,11 +172,36 @@ async function run() {
       await page.click('#modal-save');
       await page.click('.day.selected');
       await categoryChoice.click();
+      assert.equal(await page.locator('[data-merchant="동네마켓"]').count(),0);
+      await page.fill('[name=use]','동네마켓');
+      await page.fill('[name=amount]','2000');
+      await page.click('#modal-save');
+      await page.click('.day.selected');
+      await categoryChoice.click();
       await page.getByRole('button',{name:'동네마켓',exact:true}).click();
       assert.equal(await page.locator('#dialog [name=use]').inputValue(),'동네마켓');
       await page.getByRole('button',{name:'식비',exact:true}).click();
       assert.equal(await page.locator('#dialog [name=use]').inputValue(),'');
       assert.equal(await page.locator('[data-merchant="동네마켓"]').count(),0);
+      await page.click('#close-dialog');
+      await page.click('.day.selected');
+      await categoryChoice.click();
+      await page.fill('[name=purchase]','작성 중인 내용');
+      await page.getByRole('button',{name:'동네마켓 추천에서 숨기기'}).click();
+      assert.equal(await page.locator('[data-merchant="동네마켓"]').count(),0);
+      assert.equal(await page.locator('[name=purchase]').inputValue(),'작성 중인 내용');
+      await page.click('#close-dialog');
+      await page.click('#category-manage');
+      const manager=page.locator('.category-row[data-id=online]');
+      await manager.locator('summary').click();
+      const hidden=manager.locator('.merchant-rule').filter({has:page.locator('input:checked')});
+      assert.equal(await hidden.locator('[name=merchantName]').inputValue(),'동네마켓');
+      await hidden.locator('[name=merchantName]').fill('우리마켓');
+      await hidden.locator('[name=hideMerchant]').uncheck();
+      await page.click('#modal-save');
+      await page.click('.day.selected');
+      await categoryChoice.click();
+      assert.equal(await page.locator('[data-merchant="우리마켓"]').getAttribute('title'),'2회 사용');
       await page.click('#close-dialog');
       await expense.locator('[data-edit]').click();
       await page.getByRole('button',{name:'쿠팡',exact:true}).click();
@@ -178,6 +217,30 @@ async function run() {
       const renamed=page.locator('.category-breakdown').filter({hasText:'인터넷 구매'});
       await renamed.locator('summary').click();
       assert.match(await renamed.innerText(),/쿠팡 · 세탁세제/);
+      await page.click('#page-calendar');
+      for (let n=0;n<12;n++){
+        await page.click('#detail-add');
+        await page.fill('#dialog [name=amount]',String(1000+n));
+        await page.click('#modal-save');
+      }
+      const layout = await page.evaluate(()=>{
+        const entries=document.querySelector('#entries');
+        const detail=document.querySelector('.detail').getBoundingClientRect();
+        const add=document.querySelector('#detail-add').getBoundingClientRect();
+        const zero=document.querySelector('#zero').getBoundingClientRect();
+        const listBox=entries.getBoundingClientRect();
+        const nextBlock=entries.nextElementSibling.getBoundingClientRect();
+        const rows=entries.querySelectorAll('.entry').length;
+        return {rows,listHeight:entries.clientHeight,contentHeight:entries.scrollHeight,
+          listGap:nextBlock.top-listBox.bottom,footerGap:zero.top-add.bottom,zeroBottom:zero.bottom,detailBottom:detail.bottom};
+      });
+      assert.equal(layout.rows,15);
+      if(width>900){
+        assert.ok(layout.listHeight>100 && layout.listGap<25 && layout.footerGap<40 && layout.zeroBottom<=layout.detailBottom,JSON.stringify(layout));
+        assert.ok(layout.contentHeight>layout.listHeight,'Long list should scroll');
+      } else {
+        assert.ok(layout.contentHeight<=layout.listHeight+1,'Mobile list should expand');
+      }
       assert.deepEqual(errors,[]);
       await page.close();
       console.log(width+'px: CRUD, undo/trash/history, export/import, invalid restore, stamp, negative budget, amount bounds PASS');

@@ -1,4 +1,5 @@
 import {expenseDetails,bindCategories,manageCategories,categoryName} from './categories.js';
+import {merchantRanking,merchantRule,merchantCategoryKey} from './merchants.js';
 import {planEditor, bindPlanRows, readPlan, fixedPage} from './plan.js';
 import {reportPage} from './report.js';
 let activePage = 'calendar';
@@ -22,14 +23,25 @@ let state=empty(),month=today().slice(0,7),selected=today(),user=null,demo=false
 function statusText(s){status=s;const e=$('#status');if(e)e.textContent=s;}
 function error(e){statusText('저장 실패 · '+(e.message||e));failed=true;busy=false;render();}
 function canEdit(){return ready&&!busy&&!failed;}
-async function persist(next){
+async function persist(next, keepEditor=false){
  if(!canEdit())return;try{validate(next);}catch(e){statusText(e.message);return;}
- state=next;pending=true;busy=true;status='저장 중…';render();
+ const refresh=()=>keepEditor && $('#dialog')?.open ? statusText(status) : render();
+ state=next;pending=true;busy=true;status='저장 중…';refresh();
  try{if(demo){localStorage.setItem('bbo-demo-v1',JSON.stringify(next));}else{const uid=user.uid,base=version;await runTransaction(db,async tx=>{const r=doc(db,'users',uid,'ledgers','main'),snap=await tx.get(r);const current=snap.exists()?snap.data().version:0;if(current!==base)throw Error('다른 기기에서 변경되었습니다. 내보내기로 현재 입력을 보관한 뒤 최신 데이터 불러오기를 눌러주세요.');tx.set(r,{version:base+1,data:next,updatedAt:new Date().toISOString()});});version=base+1;}
- pending=false;busy=false;failed=false;status=demo?'기기에 저장 완료 · 체험 데이터':'서버 저장 완료';render();
+ pending=false;busy=false;failed=false;status=demo?'기기에 저장 완료 · 체험 데이터':'서버 저장 완료';refresh();return true;
  }catch(e){error(e);}
 }
 function change(fn){const n=structuredClone(state);fn(n);return persist(n);}
+async function hideMerchant(id,name) {
+ const next=structuredClone(state);
+ const category=next.categories[merchantCategoryKey(id)] ??= {name:'미분류',merchant:'',archived:false};
+ const item=merchantRanking(next,id).find(item=>item.name===name);
+ if (!item || !canEdit()) throw Error('저장 가능한 상태에서 다시 시도해주세요.');
+ category.merchants=[...(category.merchants || []).filter(rule=>rule.name!==name),merchantRule(item,name,true)];
+ validate(next);
+ if (!await persist(next,true)) throw Error(status);
+ return next.categories;
+}
 function connect(u){if(unsub)unsub();ready=false;state=empty();version=0;pending=false;failed=false;undo=null;user=u;demo=false;status=u?'서버에서 불러오는 중…':'Google 로그인 또는 체험 모드를 선택해주세요.';render();if(!u)return;
  unsub=onSnapshot(doc(db,'users',u.uid,'ledgers','main'),{includeMetadataChanges:true},snap=>{if(user?.uid!==u.uid||pending||busy)return;try{state=snap.exists()?validate(snap.data().data):empty();version=snap.exists()?snap.data().version:0;ready=!snap.metadata.fromCache;failed=false;status=ready?'서버 동기화 완료':'서버 연결 대기 중';render();}catch(e){error(e);}},e=>error(e));
 }
@@ -108,7 +120,7 @@ function openDayEditor(date) {
     validate(next);
     return persist(next);
   });
-  bindCategories($('#modal-form'),state);
+  bindCategories($('#modal-form'),state,hideMerchant);
   $('#dialog [name=amount], #dialog textarea')?.focus();
 }
 
@@ -142,7 +154,7 @@ function bind(){
      if (canEdit()) openDayEditor(selected);
    };
  });
- document.querySelectorAll('[data-edit]').forEach(e=>e.onclick=()=>{const id=e.dataset.edit;modal('지출 수정',numberField('금액','amount',state.entries[id].amount)+`${expenseDetails(state,state.entries[id])}`,async f=>{const v=amount(f.get('amount'));if(!v)throw Error('0원은 지출 삭제 후 무지출 확인을 사용해주세요.');await change(s=>revise(s,id,{amount:v,note:String(f.get('use')||'').trim(),purchase:f.get('purchase').trim(),categoryId:f.get('categoryId')||''},'지출 수정'));});bindCategories($('#modal-form'),state);});
+ document.querySelectorAll('[data-edit]').forEach(e=>e.onclick=()=>{const id=e.dataset.edit;modal('지출 수정',numberField('금액','amount',state.entries[id].amount)+`${expenseDetails(state,state.entries[id])}`,async f=>{const v=amount(f.get('amount'));if(!v)throw Error('0원은 지출 삭제 후 무지출 확인을 사용해주세요.');await change(s=>revise(s,id,{amount:v,note:String(f.get('use')||'').trim(),purchase:f.get('purchase').trim(),categoryId:f.get('categoryId')||''},'지출 수정'));});bindCategories($('#modal-form'),state,hideMerchant);});
  document.querySelectorAll('[data-delete]').forEach(e=>e.onclick=()=>{const id=e.dataset.delete;undo=id;change(s=>revise(s,id,{deleted:true},'삭제'));});
  document.querySelectorAll('[data-history]').forEach(e=>e.onclick=()=>history(e.dataset.history));
  on('undo',()=>{const id=undo;undo=null;change(s=>revise(s,id,{deleted:false},'삭제 되돌리기'));});
