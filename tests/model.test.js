@@ -8,6 +8,24 @@ test('미기록/확인 무지출 구분 및 미래 도장 금지, 지출 추가 
 test('내보내기 roundtrip 및 가져오기 무결성 검사',()=>{const s=empty();s.months['2026-11']={...monthData(s,'2026-11'),memo:'<script>악성</script>'};revise(s,'a',{date:today(),amount:999999999999,deleted:false},'추가');assert.deepEqual(validate(JSON.parse(JSON.stringify(s))),s);for(const f of [null,{schema:2}, {...s,entries:{a:{date:'2026-02-30',amount:1,deleted:false}}},{...s,entries:{a:{date:'2099-01-01',amount:1,deleted:false}}},{...s,entries:{a:{date:today(),amount:-1,deleted:false}}},{...s,months:{'2026-11':{...s.months['2026-11'],budget:NaN}}}])assert.throws(()=>validate(f));});
 import {merchantRanking, suggestedMerchants, merchantRule} from '../src/merchants.js';
 import {weekLabel,proratedWeeks} from '../src/model.js';
+import {carryover,settlementBalance} from '../src/model.js';
+test('전월 정산잔액은 연도와 빈 달을 넘어 이월되며 과거 수정·삭제·복원을 반영한다',()=>{
+  const s=empty();
+  s.months['2025-12']={...monthData(s,'2025-12'),settlement:[
+    {name:'수입',value:100000},{name:'고정지출',value:20000},{name:'저축',value:10000}
+  ]};
+  revise(s,'dec',{date:'2025-12-31',amount:50000,deleted:false},'추가');
+  revise(s,'jan',{date:'2026-01-01',amount:30000,deleted:false},'추가');
+  assert.equal(carryover(s,'2025-12'),0);
+  assert.equal(carryover(s,'2026-01'),20000);
+  assert.equal(carryover(s,'2026-03'),-10000);
+  revise(s,'dec',{amount:40000},'수정');
+  assert.equal(carryover(s,'2026-03'),0);
+  revise(s,'jan',{deleted:true},'삭제');
+  assert.equal(carryover(s,'2026-03'),30000);
+  revise(s,'jan',{deleted:false},'복원');
+  assert.equal(carryover(s,'2026-02'),carryover(s,'2026-01')+settlementBalance(monthData(s,'2026-01').settlement,30000));
+});
 test('기준 주 예산을 해당 월 일수에 따라 원 단위로 반올림한다',()=>{
   const jan=proratedWeeks('2027-01','150,000');
   assert.equal(jan['2026-12-28'],64286);

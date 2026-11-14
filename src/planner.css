@@ -72,7 +72,7 @@ button:disabled { opacity:.68; }
 @media(min-width:901px) {
   main { grid-template-columns:minmax(190px,.91fr) minmax(0,1.95fr) minmax(230px,1.08fr); gap:10px; }
   .left,.right { height:100%; display:flex; flex-direction:column; }
-  .left .card { flex-shrink:0; }.settlement-items { max-height:max(130px,16vh); overflow:auto; }
+  .left .card { flex-shrink:0; }.settlement-items:has(.pair:nth-child(5)) { max-height:max(175px,20vh); overflow:auto; }
   .calendar-card { height:100%; }.detail { flex:1; }
   .left { overflow:auto; }.right .memo { flex-shrink:0; }
   .detail #entries { flex:1 1 auto; }.detail .empty-day .icon { width:clamp(65px,8vh,110px); height:clamp(65px,8vh,110px); }
@@ -188,6 +188,8 @@ dialog input {font-family:var(--ui-font)}
   display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2;
   min-height:0; overflow:hidden; overflow-wrap:anywhere; text-align:left;
   color:#593c69; font:600 clamp(11px,.82vw,16px)/1.25 var(--ui-font);
+  align-self:stretch;
+  background:linear-gradient(to bottom,transparent 30%,#ead9fa 36%,#e3cef6 80%,transparent 86%) left top / 100% 1lh repeat-y;
 }
 .day:has(.calendar-note) .stamp {min-height:20px}
 @font-face {

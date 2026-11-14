@@ -131,6 +131,10 @@ async function run() {
       assert.match(await page.locator('.weekly .balance').innerText(),/−12,000/);
       const net=page.locator('.settlement .balance strong');
       assert.equal(await net.innerText(),'1,938,000원');
+      await page.click('#next');
+      assert.equal(await page.locator('.carryover b').innerText(),'1,938,000원');
+      assert.equal(await net.innerText(),'1,938,000원');
+      await page.click('#prev');
       await page.click('[data-delete]');
       assert.equal(await net.innerText(),'2,100,000원');
       await page.click('#undo');
@@ -209,6 +213,10 @@ async function run() {
       assert.match(await page.locator('.fixed-list').innerText(),/21,000/);
       await page.click('#page-calendar');
       assert.equal(await net.innerText(),'−999,997,920,999원');
+      await page.click('#next');
+      assert.equal(await page.locator('.carryover b').innerText(),'−999,997,920,999원');
+      assert.equal(await net.innerText(),'−999,997,920,999원');
+      await page.click('#prev');
       await page.click('#category-manage');
       await page.click('#new-category');
       assert.equal(await page.locator('.category-row [name=categoryName]').count(),12);

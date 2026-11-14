@@ -9,7 +9,7 @@ import {initializeApp} from 'firebase/app';
 import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from 'firebase/auth';
 import {getFirestore,doc,onSnapshot,runTransaction} from 'firebase/firestore';
 import {firebaseConfig} from './config.js';
-import {today,money,amount,empty,weekStart,weekLabel,weeks,monthData,totals,settlementBalance,dayTotal,stamped,validate,revise} from './model.js';
+import {today,money,amount,empty,weekStart,weekLabel,weeks,monthData,totals,carryover,settlementBalance,dayTotal,stamped,validate,revise} from './model.js';
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
 const $=s=>document.querySelector(s),esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const artwork = new Set(["add","edit","trash","restore","wallet","calendar","cloud","purse","prev","next","seal"]);
@@ -71,9 +71,13 @@ function connect(u){if(unsub)unsub();ready=false;state=empty();version=0;pending
 }
 function budgetCard(title,kind,used,remaining,value){return `<section class="card budget ${kind}"><h2>${icon(kind==='monthly'?'wallet':'heart')}${title}</h2><div class="budget-top"><span>예산</span><strong>${money(value)}원</strong></div><div class="pair"><span>사용액</span><b>${money(used)}원</b></div><div class="balance ${remaining<0?'negative':''}"><span>${kind==='monthly'?'이번 달':'이번 주'} 남음</span><strong>${money(remaining)}원</strong></div></section>`;}
 function settlementCard(rows,used) {
- const balance=settlementBalance(rows,used);
+ const opening=carryover(state,month);
+ const balance=opening+settlementBalance(rows,used);
+ const items=rows.map(r=>`<div class="pair"><span>${esc(r.name)}</span><b>${money(r.value)}원</b></div>`);
+ const incomeIndex=rows.findIndex(r=>r.name.trim()==='수입');
+ items.splice(incomeIndex+1,0,`<div class="pair carryover" title="지난달 정산잔액"><span>이월</span><b>${money(opening)}원</b></div>`);
  return `<section class="card settlement"><h2>${icon('spark')}이번 달 정산</h2>
-   <div class="settlement-items">${rows.map(r=>`<div class="pair"><span>${esc(r.name)}</span><b>${money(r.value)}원</b></div>`).join('')}</div>
+   <div class="settlement-items">${items.join('')}</div>
    <div class="pair"><span>사용액</span><b>${money(used)}원</b></div>
    <div class="balance ${balance<0?'negative':''}"><span>정산 잔액</span><strong>${money(balance)}원</strong></div></section>`;
 }

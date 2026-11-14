@@ -39,10 +39,15 @@ async function run() {
           const cells=[...grid.children].map(el=>el.getBoundingClientRect());
           const last=grid.querySelector('.day:last-of-type');
           const r=last.getBoundingClientRect();
-          const memo=last.querySelector('.calendar-note').getBoundingClientRect();
+          const memoLine=last.querySelector('.calendar-note');
+          const memo=memoLine.getBoundingClientRect();
+          const ink=getComputedStyle(memoLine);
+          const cellStyle=getComputedStyle(last);
+          const textWidth=last.clientWidth-parseFloat(cellStyle.paddingLeft)-parseFloat(cellStyle.paddingRight);
           const amount=last.querySelector('.day-amount').getBoundingClientRect();
           return {rows:new Set(cells.map(c=>c.y)).size, last:last.querySelector('.day-number').textContent.trim(),
-            memoHeight:memo.height,amountFits:amount.bottom<=r.bottom+1 && memo.bottom<=amount.top+1,
+            memoHeight:memo.height,fullHighlight:Math.abs(memo.width-textWidth)<1 && ink.backgroundImage.includes('linear-gradient') && ink.backgroundRepeat==='repeat-y',
+            amountFits:amount.bottom<=r.bottom+1 && memo.bottom<=amount.top+1,
             pageHeight:document.documentElement.scrollHeight, gridHeight:Math.round(box.height),
             lastBottom:Math.round(cells.at(-1).bottom), cardBottom:Math.round(card.bottom),
             hit:last.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)),
@@ -52,7 +57,7 @@ async function run() {
         const info=JSON.stringify({width,height,month,weeks,...actual});
         assert.equal(actual.rows,weeks,info);
         assert.equal(actual.last,String(count),info);
-        assert.ok(actual.memoHeight>=9 && actual.amountFits,info);
+        assert.ok(actual.memoHeight>=9 && actual.amountFits && actual.fullHighlight,info);
         assert.ok(actual.top>=0 && actual.lastBottom<=height && actual.lastBottom<=actual.cardBottom && actual.hit && !actual.clipped && !actual.uneven,info);
         if(width>900)assert.ok(actual.pageHeight<=height,info);
       }

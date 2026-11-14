@@ -44,6 +44,16 @@ export function settlementBalance(rows,used) {
  }
  return balance;
 }
+export function carryover(state,month) {
+ let balance=0;
+ for(const [key,config] of Object.entries(state.months)) {
+   if(key<month) balance+=settlementBalance(config.settlement,0);
+ }
+ for(const entry of Object.values(state.entries)) {
+   if(!entry.deleted && entry.date.slice(0,7)<month) balance-=entry.amount;
+ }
+ return balance;
+}
 export const stamped=(s,d,now=today())=>d<=now&&s.closed[d]===true&&dayTotal(s,d)===0;
 export function validate(s){
  const isMap = value => value !== null && typeof value === 'object' && !Array.isArray(value);
