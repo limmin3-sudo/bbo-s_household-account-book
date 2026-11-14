@@ -10,7 +10,8 @@ service cloud.firestore {
     && request.resource.data.version == (resource == null ? 1 : resource.data.version + 1)
     && request.resource.data.updatedAt is string
     && request.resource.data.data is map
-    && request.resource.data.data.keys().hasOnly(['schema','entries','months','closed','history'])
+    && request.resource.data.data.keys().hasOnly(['schema','entries','months','closed','history','categories'])
+    && (!('categories' in request.resource.data.data) || request.resource.data.data.categories is map)
     && request.resource.data.data.schema == 1
     && request.resource.data.data.entries is map
     && request.resource.data.data.months is map

@@ -1,3 +1,4 @@
+import {categoryReport} from './categories.js';
 import {money, monthData, today} from './model.js';
 
 function previousMonth(month) {
@@ -51,5 +52,5 @@ export function reportPage(state, month) {
     </section>
     <section class="report-chart"><h3>지난달과 지출 비교</h3>
       <p>각 달에 입력한 지출 합계${month === today().slice(0,7) ? ' · 이번 달은 오늘까지' : ''}</p>${comparison}
-    </section></div></section></main>`;
+    </section>${categoryReport(state,month)}</div></section></main>`;
 }

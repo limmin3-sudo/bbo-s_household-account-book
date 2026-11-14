@@ -110,3 +110,59 @@ main.report-layout { display:block; height:auto; min-height:0; }
 .compare-row {margin-top:12px}.compare-row>div:first-child { display:flex; justify-content:space-between; gap:10px; }
 .compare-track { height:10px; border-radius:6px; background:#f4edf7; margin-top:5px; overflow:hidden; }.compare-track i { height:100%; border-radius:6px; }.compare-row:first-of-type i {background:#b8a7c0}
 @media(max-width:900px){.report-totals{gap:5px;grid-template-columns:1fr 1fr}.report-totals>div:first-child{grid-column:1/-1}.report-totals strong{font-size:18px}.report-body{padding:8px}.report-chart{padding:12px 8px}.daily-plot{gap:1px}}
+
+@font-face {
+  font-family: 'Gowun';
+  src: url('/fonts/GowunDodum-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+:root { --ui-font:'Gowun','Apple SD Gothic Neo','Malgun Gothic',sans-serif; font-family:var(--ui-font); font-synthesis:weight; color:#352b43; }
+h1,h2,h3,button,.brand h1,.calendar-title h2,.detail-title h2,.card>h2,.month-switch strong,.weekdays,.day-number,.pair span,.budget-top>span,.balance>span,.report-chart h3,.report-totals span,.detail-title>span,#add-form label {
+  font-family:var(--ui-font); font-weight:700; letter-spacing:-.025em;
+}
+header { background:linear-gradient(110deg,#312940,#514268 70%,#393047); }
+.card>h2,.calendar-title,.detail-title { color:#392b48; background:linear-gradient(100deg,#e7daf4,#f3edf9); border:1px solid #dbcae7; }
+.detail-title>span {color:#675378}
+#app button:not(.day):not(.plot-day):not(#prev):not(#next) {
+  border:1px solid #c9b5d9; border-radius:18px; background:#fcfaff url('/assets/planner/pill.svg') center/100% 100%;
+  color:#483258; box-shadow:inset 0 1px 0 #fff,0 1px 2px #442e5a18;
+  line-height:1.35; font-family:var(--ui-font); font-weight:700; white-space:normal; word-break:keep-all;
+}
+#app button.primary:not(.day),#app .page-switch button[aria-pressed="true"],#app #add {
+  border-color:#704992; background:#775199 url('/assets/planner/pill-purple.svg') center/100% 100%;
+  color:#fff; box-shadow:inset 0 1px 0 #ffffff47,0 2px 3px #55386524;
+}
+#app button:not(.day):not(.plot-day):enabled:hover {filter:brightness(1.04)}
+#app button:focus-visible {outline:3px solid #9a70bd;outline-offset:2px}
+#app .entry button,#app .settlement-row button {border-radius:10px}
+#app .topline button {padding:6px 12px;font-size:14px}
+.month-switch strong {background:#f5effb;border-radius:14px;font-weight:700}
+.saved-plan,.saved-day-note {white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;color:#44374d;}
+.saved-plan {max-height:16vh;overflow:auto;padding:10px 12px;min-height:64px;font-size:16px}
+.saved-day-note {overflow:auto;max-height:13vh;background:#f6f0fa;border-radius:9px;padding:7px 10px}
+.saved-day-note b {display:block;color:#745b86;font-size:12px}
+.fixed-list {margin:0}.fixed-list>div {display:flex;gap:10px;justify-content:space-between;padding:12px;border-bottom:1px solid #ddcde5}.fixed-list dt{overflow-wrap:anywhere}.fixed-list dd{margin:0;font-weight:700}
+.plan-group {border:1px solid #dfd0e8;border-radius:12px;padding:9px 12px;margin:8px 0}
+.plan-group summary {cursor:pointer;font-weight:700;color:#533665;padding:4px}
+.plan-group[open] summary {margin-bottom:8px}
+dialog textarea {resize:vertical;line-height:1.55;font-family:var(--ui-font);font-size:16px}
+dialog input {font-family:var(--ui-font)}
+@media(max-width:900px){
+  #app .topline button{padding:6px 9px;font-size:13px}
+  .topline .page-switch{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+  #app .page-switch button{padding:6px 3px;gap:3px}.page-switch .icon{width:14px;height:14px}
+}
+
+.category-picker {display:flex;flex-wrap:wrap;gap:5px;grid-column:1/-1;margin:4px 0;max-height:85px;overflow:auto}
+#app .category-picker button {min-height:30px;padding:4px 11px;font-size:14px}
+#app .category-picker button[aria-pressed=true] {color:#fff;background:#785198 url('/assets/planner/pill-purple.svg') center/100% 100%}
+#purchase {grid-column:1/-1}
+.category-row {padding:7px 0 13px;border-bottom:1px solid var(--rule)}
+.category-row label {margin:7px 0}
+.category-breakdown {margin-top:9px}.category-breakdown summary{cursor:pointer;padding:6px 0;font-weight:700}
+.category-breakdown ul {list-style:none;padding:0;margin:0}
+.category-breakdown li {display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:start;border-top:1px solid var(--rule);padding:8px 0}
+.category-breakdown li span{overflow-wrap:anywhere}
+@media(min-width:901px){.detail{overflow:auto}.detail #entries{flex-shrink:0;max-height:26%}.detail .empty-day .icon{width:50px;height:50px}}
+@media(min-width:901px){main:not(.report-layout){grid-template-rows:minmax(0,1fr)}.right,.left{min-height:0}.detail #detail-add{margin:10px 0}.detail .empty-day .icon{width:clamp(65px,9vh,108px);height:clamp(65px,9vh,108px)}}
