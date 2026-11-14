@@ -3,9 +3,8 @@
 
 | 원본 | 화면에서 사용하는 자산 |
 |---|---|
-| characters.png | hello (제목), app (파비콘), purse (빈 내역), seal (무지출 확인 버튼) |
+| characters.png | hello (제목), app (파비콘), purse (빈 내역), seal (달력 무지출 도장·무지출 확인 버튼) |
 | controls.png | add, edit, trash, prev, next, calendar, wallet, restore, cloud |
-| planner/no-spend.svg | 원본 purse 그림을 보라색 잉크로 표현한 무지출성공! 도장 |
 | planner/panel.svg, ribbon.svg, key.svg, bow.svg | 크기가 달라지는 패널, 제목 띠, 버튼 표면, 헤더 리본 |
 | 기존 개별 SVG | 메모·이력·내보내기 등 보조 기능 아이콘 |
 

@@ -109,7 +109,7 @@ function calendar() {
       <span class="day-number">${day}</span>
       ${note ? `<span class="calendar-note" title="${esc(note)}">${esc(note)}</span>` : ''}
       ${total ? `<span class="day-amount">${money(total).replaceAll(',',',<wbr>')}</span>` : ''}
-      ${zero ? '<span class="stamp"><img src="/assets/planner/no-spend.svg" alt="무지출성공!"></span>' : ''}
+      ${zero ? '<span class="stamp"><img src="/assets/planner/seal.webp" alt="무지출성공!"></span>' : ''}
     </button>`);
   }
   return blank.repeat(offset) + cells.join('') + blank.repeat((7-(offset+count)%7)%7);
