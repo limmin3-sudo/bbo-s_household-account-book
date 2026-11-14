@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  match /users/{uid}/ledgers/main {
+   function owner() { return request.auth != null && request.auth.uid == uid; }
+   allow read: if owner();
+   allow create, update: if owner()
+    && request.resource.data.keys().hasOnly(['version','data','updatedAt'])
+    && request.resource.data.version is int
+    && request.resource.data.version == (resource == null ? 1 : resource.data.version + 1)
+    && request.resource.data.updatedAt is string
+    && request.resource.data.data is map
+    && request.resource.data.data.keys().hasOnly(['schema','entries','months','closed','history'])
+    && request.resource.data.data.schema == 1
+    && request.resource.data.data.entries is map
+    && request.resource.data.data.months is map
+    && request.resource.data.data.closed is map
+    && request.resource.data.data.history is map;
+   allow delete: if false;
+  }
+ }
+}

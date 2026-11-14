@@ -1,0 +1,1 @@
+export const firebaseConfig={apiKey:'AIzaSyCn6NuUpAxhCEv9xeUCd9cMj3jA--BTaFs',authDomain:'bbo-s-household-account.firebaseapp.com',projectId:'bbo-s-household-account',storageBucket:'bbo-s-household-account.firebasestorage.app',messagingSenderId:'1006323120009',appId:'1:1006323120009:web:c1bce1fbf2316073f79358'};
