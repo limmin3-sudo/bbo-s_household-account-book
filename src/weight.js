@@ -18,14 +18,14 @@ export function weightPage(state,month,date=today()) {
   const delta=records.length>1 ? Math.round((last-first)*10)/10 : null;
   const change=delta===null ? '—' : delta===0 ? '변화 없음' : kg(Math.abs(delta))+(delta<0?' 감량':' 증가');
   return `<main class="report-layout weight-layout"><section class="card weight-page" aria-label="체중 기록">
-    <h2><img class="weight-title-mascot" src="/assets/planner/hello.webp" alt="">${month.slice(0,4)}년 ${Number(month.slice(5))}월 체중<span class="weight-title-spark" aria-hidden="true">✦</span></h2>
+    <h2>${month.slice(0,4)}년 ${Number(month.slice(5))}월 체중</h2>
     <div class="weight-body">
     <div class="weight-stats">
-      <div class="weight-start"><div class="weight-stat-label"><span>첫 기록</span><i aria-hidden="true"><img src="/assets/weight.svg" alt=""></i></div><strong>${records.length?kg(first):'—'}</strong></div>
-      <div class="weight-today"><div class="weight-stat-label"><span>오늘 기록</span><i aria-hidden="true"><img src="/assets/planner/hello.webp" alt=""></i></div><strong>${todayWeight===undefined?'미기록':kg(todayWeight)}</strong></div>
-      <div class="weight-change"><div class="weight-stat-label"><span>이달의 변화</span><i aria-hidden="true"><img src="/assets/spark.svg" alt=""></i></div><strong>${change}</strong></div>
+      <div><span>첫 기록</span><strong>${records.length?kg(first):'—'}</strong><small>${records[0]?.[0] || '기록 없음'}</small></div>
+      <div class="weight-today"><span>오늘 기록</span><strong>${todayWeight===undefined?'미기록':kg(todayWeight)}</strong><small>${date}</small></div>
+      <div><span>이달의 변화</span><strong>${change}</strong></div>
     </div>
-    <section class="weight-chart"><div class="weight-chart-head"><div class="weight-chart-brand"><img src="/assets/planner/seal.webp" alt=""><h3>체중 변화</h3><span class="weight-chart-heart" aria-hidden="true">♡</span></div><span>kg</span></div>${records.length ? chart(records,month) : '<div class="weight-empty"><img src="/assets/planner/seal.webp" alt=""><p>기록 없음</p></div>'}</section>
+    <section class="weight-chart"><div class="weight-chart-head"><h3>체중 변화</h3><span>kg</span></div>${records.length ? chart(records,month) : '<p class="weight-empty">기록 없음</p>'}</section>
     </div></section></main>`;
 }
 function chart(records,month) {
@@ -42,22 +42,15 @@ function chartContents(records,month,width,height) {
   const x=day=>left+(day-1)/(days-1)*(width-left-right);
   const y=value=>top+(high-value)/(high-low)*(height-top-bottom);
   const positions=records.map(([date,value])=>[x(Number(date.slice(8))),y(value)]);
-  const curve=positions.reduce((path,[px,py],i)=>{
-    if(!i)return `M ${px} ${py}`;
-    const [previousX,previousY]=positions[i-1],middle=(previousX+px)/2;
-    return path+` C ${middle} ${previousY} ${middle} ${py} ${px} ${py}`;
-  },'');
-  const [lastX,lastY]=positions.at(-1);
-  const stickerX=lastX+64<width-right ? lastX+18 : lastX-56;
-  const stickerY=Math.max(top,Math.min(height-bottom-44,lastY-52));
+  const points=positions.map(point=>point.join(',')).join(' ');
   const base=height-bottom;
-  const area=`${curve} L ${lastX} ${base} L ${positions[0][0]} ${base} Z`;
+  const area=`M ${positions[0][0]} ${base} L ${positions.map(point=>point.join(' ')).join(' L ')} L ${positions.at(-1)[0]} ${base} Z`;
   const grid=Array.from({length:high-low+1},(_,i)=>{
     const value=low+i,cy=y(value);
     return `<line x1="${left}" y1="${cy}" x2="${width-right}" y2="${cy}" class="weight-grid"/><text class="weight-kg" x="${left-12}" y="${cy+4}" text-anchor="end">${value}</text>`;
   }).join('');
   const labels=Array.from({length:days},(_,i)=>i+1).map(day=>`<text class="weight-day" x="${x(day)}" y="${height-12}" text-anchor="${compact?'end':'middle'}" ${compact?`transform="rotate(-55 ${x(day)} ${height-12})"`:''}>${day}</text>`).join('');
-  return `<defs><linearGradient id="weight-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#a07ad4" stop-opacity=".25"/><stop offset="100%" stop-color="#a07ad4" stop-opacity="0"/></linearGradient><linearGradient id="weight-stroke"><stop stop-color="#b18cd9"/><stop offset="100%" stop-color="#7950b5"/></linearGradient></defs>${grid}${labels}<path d="${area}" fill="url(#weight-fill)"/><line class="weight-guide" y1="${top}" y2="${base}" hidden/><path d="${curve}" class="weight-line"/><g class="weight-companion" aria-hidden="true" pointer-events="none"><circle cx="${stickerX+21}" cy="${stickerY+22}" r="25"/><image href="/assets/planner/hello.webp" x="${stickerX}" y="${stickerY}" width="42" height="42"/></g>${records.map(([date,value],i)=>`<g class="weight-marker" data-weight-date="${date}" data-weight-value="${value}" tabindex="0" role="button" aria-label="${date} ${kg(value)}"><circle cx="${positions[i][0]}" cy="${positions[i][1]}" r="14" class="weight-hit"/><circle cx="${positions[i][0]}" cy="${positions[i][1]}" r="${i===records.length-1?5.5:4.5}" class="weight-point"/></g>`).join('')}`;
+  return `<defs><linearGradient id="weight-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#a07ad4" stop-opacity=".25"/><stop offset="100%" stop-color="#a07ad4" stop-opacity="0"/></linearGradient><linearGradient id="weight-stroke"><stop stop-color="#b18cd9"/><stop offset="100%" stop-color="#7950b5"/></linearGradient></defs>${grid}${labels}<path d="${area}" fill="url(#weight-fill)"/><line class="weight-guide" y1="${top}" y2="${base}" hidden/><polyline points="${points}" class="weight-line"/>${records.map(([date,value],i)=>`<g class="weight-marker" data-weight-date="${date}" data-weight-value="${value}" tabindex="0" role="button" aria-label="${date} ${kg(value)}"><circle cx="${positions[i][0]}" cy="${positions[i][1]}" r="14" class="weight-hit"/><circle cx="${positions[i][0]}" cy="${positions[i][1]}" r="${i===records.length-1?5.5:4.5}" class="weight-point"/></g>`).join('')}`;
 }
 
 let chartObserver;

@@ -44,12 +44,10 @@ test('오늘 기록은 오늘 체중만 표시하고 과거 기록을 대신 표
   const s=empty(),m='2026-01';
   s.months[m]={...monthData(s,m),weights:{'2026-01-02':72.5,'2026-01-05':70.1}};
   const missing=weightPage(s,m,'2026-01-06');
-  assert.match(missing,/<div class="weight-today">[\s\S]*?<strong>미기록<\/strong>/);
+  assert.match(missing,/<div class="weight-today"><span>오늘 기록<\/span><strong>미기록<\/strong><small>2026-01-06/);
   s.months[m].weights['2026-01-06']=69.8;
   const recorded=weightPage(s,m,'2026-01-06');
-  assert.match(recorded,/<div class="weight-today">[\s\S]*?<strong>69.8kg<\/strong>/);
-  const summary=recorded.split('<div class="weight-stats">')[1].split('<section class="weight-chart">')[0];
-  assert.doesNotMatch(summary,/<small>|2026-01-/);
+  assert.match(recorded,/<div class="weight-today"><span>오늘 기록<\/span><strong>69.8kg<\/strong><small>2026-01-06/);
   assert.doesNotMatch(recorded,/아침 몸무게를|첫 기록 대비|일 기록 ·|점에 마우스/);
 });
 

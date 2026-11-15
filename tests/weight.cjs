@@ -28,8 +28,6 @@ const {chromium}=require('playwright');
    assert.equal(await page.locator('#page-weight').evaluate(el=>el.nextElementSibling.id),'open-plan');
    await page.click('#page-weight');
    assert.match(await page.locator('.weight-stats').innerText(),/1.3kg 감량/);
-   assert.equal(await page.locator('.weight-stats small').count(),0);
-   assert.doesNotMatch(await page.locator('.weight-stats').innerText(),/\d{4}-\d{2}-\d{2}/);
    assert.equal(await page.locator('.weight-point').count(),2);
    assert.ok(await page.evaluate(()=>document.documentElement.scrollHeight<=innerHeight+1&&document.documentElement.scrollWidth<=innerWidth+1));
    await page.locator('.weight-marker').nth(1).hover();
