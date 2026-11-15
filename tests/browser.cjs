@@ -100,6 +100,21 @@ async function run() {
       await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
       const afterStamp=await page.locator('.day.selected .stamp img').boundingBox();
       assert.deepEqual(afterStamp,beforeStamp,'Memo should not change seal size or location');
+      assert.ok(await page.locator('.day.selected').evaluate(day=>{
+        const cell=day.getBoundingClientRect(),style=getComputedStyle(day);
+        const stamp=day.querySelector('.stamp img').getBoundingClientRect();
+        const note=day.querySelector('.calendar-note').getBoundingClientRect();
+        return Math.abs(stamp.right-cell.right+parseFloat(style.paddingRight)+1)<1
+          && Math.abs(stamp.bottom-cell.bottom+parseFloat(style.paddingBottom)+1)<1
+          && Math.abs(note.width-day.clientWidth)<1 && Math.abs(note.left-cell.left)<1;
+      }),'Seal must stay at the lower-right while the memo spans the whole cell');
+      assert.ok(await page.evaluate(()=>{
+        const bg=s=>getComputedStyle(document.querySelector(s)).backgroundColor;
+        return bg('.settlement .balance strong')==='rgb(242, 239, 248)'
+          && bg('.monthly .balance strong')===bg('.weekly .balance')
+          && bg('.settlement-used')==='rgb(246, 244, 248)'
+          && getComputedStyle(document.querySelector('.settlement-used')).borderTopWidth==='0px';
+      }));
       assert.equal(await page.locator('.topline #export,.topline #import,.topline #trash,.week-range,.bottom').count(),0);
       assert.equal(await page.locator('.page-switch #open-plan').count(),0);
       assert.equal(await page.locator('.plan-actions #open-plan,.plan-actions #category-manage').count(),2);

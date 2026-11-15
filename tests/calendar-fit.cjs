@@ -43,10 +43,9 @@ async function run() {
           const memo=memoLine.getBoundingClientRect();
           const ink=getComputedStyle(memoLine);
           const cellStyle=getComputedStyle(last);
-          const textWidth=last.clientWidth-parseFloat(cellStyle.paddingLeft)-parseFloat(cellStyle.paddingRight);
           const amount=last.querySelector('.day-amount').getBoundingClientRect();
           return {rows:new Set(cells.map(c=>c.y)).size, last:last.querySelector('.day-number').textContent.trim(),
-            memoHeight:memo.height,fullHighlight:Math.abs(memo.width-textWidth)<1 && ink.backgroundImage.includes('linear-gradient') && ink.backgroundRepeat==='repeat-y',
+            memoHeight:memo.height,fullHighlight:Math.abs(memo.width-last.clientWidth)<1 && Math.abs(memo.left-r.left)<1 && ink.backgroundColor==='rgb(228, 208, 246)',
             amountFits:amount.bottom<=r.bottom+1 && memo.bottom<=amount.top+1,
             pageHeight:document.documentElement.scrollHeight, gridHeight:Math.round(box.height),
             lastBottom:Math.round(cells.at(-1).bottom), cardBottom:Math.round(card.bottom),

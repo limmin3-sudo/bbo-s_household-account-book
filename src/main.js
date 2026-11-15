@@ -78,7 +78,7 @@ function settlementCard(rows,used) {
  items.splice(incomeIndex+1,0,`<div class="pair carryover" title="${state.months[month]?.carryover!==undefined?'직접 설정한 이월':'지난달 정산잔액'}"><span>이월</span><b>${money(opening)}원</b></div>`);
  return `<section class="card settlement"><h2>${icon('spark')}이번 달 정산</h2>
    <div class="settlement-items">${items.join('')}</div>
-   <div class="pair"><span>사용액</span><b>${money(used)}원</b></div>
+   <div class="pair settlement-used"><span>사용액</span><b>${money(used)}원</b></div>
    <div class="balance ${balance<0?'negative':''}"><span>정산 잔액</span><strong>${money(balance)}원</strong></div></section>`;
 }
 function render(){
