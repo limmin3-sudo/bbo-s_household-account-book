@@ -309,30 +309,50 @@ main > .bottom {grid-column:1/-1;width:100%}
   .day:has(.stamp) {grid-template-rows:auto 13.75px minmax(0,1fr);padding-block:2px;row-gap:1px}
 }
 
-/* Weight records stay separate from the calendar and expense totals. */
-.weight-page {width:100%;min-width:0}
-.weight-body {padding:clamp(10px,2vw,24px);overflow:auto;min-height:0}
-.weight-stats {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:20px 0}
-.weight-stats>div {display:flex;flex-direction:column;gap:8px;padding:16px;background:#f5edf9;border:1px solid var(--rule);border-radius:12px}
-.weight-stats span,.weight-stats small {color:#776181}
-.weight-stats strong {color:#8056a5;font-size:clamp(18px,2vw,28px);overflow-wrap:anywhere}
-.weight-chart {border:1px solid var(--rule);border-radius:12px;padding:16px;margin-bottom:16px}
-.weight-chart h3 {margin:0 0 10px}
-.weight-plot {overflow:auto;max-height:400px}
-.weight-chart svg {display:block;width:100%;min-width:1080px;height:auto;margin-top:12px;overflow:visible}
-.weight-chart text {font:13px system-ui,sans-serif;fill:#776181}
-.weight-grid {stroke:#e8dfef;stroke-width:1}
-.weight-line {fill:none;stroke:#8056a5;stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
-.weight-point {fill:#bb718f;stroke:white;stroke-width:2}
-.weight-empty {text-align:center;padding:32px 8px;color:#776181;line-height:1.8}
-@media(min-width:901px) {
-  .weight-page {display:flex;flex-direction:column;max-height:100%;overflow:hidden}
-}
+/* A viewport-sized weight dashboard; the chart resizes instead of scrolling. */
+#app:has(.weight-layout) {height:100dvh;display:flex;flex-direction:column;overflow:clip}
+#app:has(.weight-layout)>:is(header,.topline,main) {width:100%;margin:0;min-width:0}
+#app:has(.weight-layout)>header,#app:has(.weight-layout)>.topline {flex-shrink:0}
+main.weight-layout {flex:1;min-height:0;height:auto;display:flex}
+.weight-page {width:100%;height:100%;min-width:0;min-height:0;display:flex;flex-direction:column}
+.weight-page>h2 {flex-shrink:0}
+.weight-body {padding:clamp(10px,1.5vw,22px);min-height:0;flex:1;display:grid;grid-template-rows:auto minmax(0,1fr);gap:clamp(10px,1.5vh,20px)}
+.weight-stats {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.weight-stats>div {position:relative;display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:0;padding:clamp(10px,1.4vw,20px);background:#fffcff;border:1px solid #e8ddef;border-radius:16px;box-shadow:0 3px 12px #69478906}
+.weight-stats span {font-size:12px;color:#95849e}
+.weight-stats small {font-size:11px;color:#a291ab}
+.weight-stats strong {color:#7953a1;font-size:clamp(18px,2vw,30px);font-weight:700;letter-spacing:-.6px;line-height:1.2}
+.weight-stats>.weight-today {background:linear-gradient(125deg,#9b78c3,#75519e);border-color:transparent;box-shadow:0 5px 16px #8663a62b}
+.weight-today span,.weight-today small {color:#eee2fb}
+.weight-today strong {color:white}
+.weight-chart {min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);background:linear-gradient(180deg,#fffefe,#fcf9ff);border:1px solid #e8ddef;border-radius:18px;padding:clamp(10px,1.4vw,20px)}
+.weight-chart-head {display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.weight-chart-head h3 {font-size:14px;color:#655073;margin:0}
+.weight-chart-head>span {font-size:11px;color:#a18eac}
+.weight-plot {position:relative;min-height:0;min-width:0}
+.weight-chart svg {display:block;width:100%;height:100%;overflow:visible}
+.weight-chart text {font:11px var(--ui-font),system-ui,sans-serif;fill:#a08dab}
+.weight-grid {stroke:#ede6f2;stroke-width:1;stroke-dasharray:3 5}
+.weight-line {fill:none;stroke:url(#weight-stroke);stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+.weight-marker {cursor:pointer;outline:none}
+.weight-hit {fill:transparent;pointer-events:all}
+.weight-point {fill:#9970c2;stroke:white;stroke-width:2.5;filter:drop-shadow(0 2px 3px #76539822);pointer-events:none}
+.weight-marker:is(.is-active,:focus-visible) .weight-point {fill:#71439f;stroke:#dfd0ef;stroke-width:4}
+.weight-guide {stroke:#baa2d0;stroke-width:1;stroke-dasharray:4 4;pointer-events:none}
+.weight-guide[hidden] {display:none}
+.weight-tooltip {position:absolute;z-index:2;pointer-events:none;min-width:116px;padding:10px 14px;border:1px solid #ede1f5;border-radius:12px;background:#fff;box-shadow:0 5px 24px #583c7624;text-align:center}
+.weight-tooltip small {display:block;font-size:10px;color:#a08aa9;margin-bottom:3px}
+.weight-tooltip strong {display:block;font-size:20px;color:#7953a1}
+.weight-empty {display:grid;place-items:center;margin:0;color:#a38faf}
 @media(max-width:600px) {
-  .weight-stats {grid-template-columns:1fr;gap:8px}
-  .weight-stats>div {display:grid;grid-template-columns:1fr auto;padding:12px}
-  .weight-stats small {grid-column:1/-1}
-  .weight-chart {padding:10px}
+  .weight-body {padding:8px;gap:10px}
+  .weight-stats {gap:6px}
+  .weight-stats>div {padding:10px 7px;gap:5px;border-radius:12px}
+  .weight-stats span {font-size:10px}
+  .weight-stats small {font-size:8px;letter-spacing:-.4px}
+  .weight-stats strong {font-size:clamp(13px,3.8vw,20px);letter-spacing:-.5px;overflow-wrap:anywhere}
+  .weight-chart {padding:10px 6px;border-radius:12px}
+  .weight-chart text {font-size:9px}
 }
 #app .detail-title #weight-input {flex-shrink:0;min-height:28px;padding:3px 8px;font-size:12px;white-space:nowrap}
 #weight-input .icon {width:16px;height:16px}

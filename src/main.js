@@ -4,7 +4,7 @@ import {planEditor, bindPlanRows, readPlan, fixedPage} from './plan.js';
 import {checklistPanel,checklistEditor,bindChecklist,readChecklist,planItems} from './checklist.js';
 import {holidayName} from './holidays.js';
 import {reportPage} from './report.js';
-import {weight,weightPage} from './weight.js';
+import {weight,weightPage,bindWeightChart} from './weight.js';
 let activePage = 'calendar';
 import './style.css';
 import './planner.css';
@@ -193,6 +193,7 @@ function openDayEditor(date) {
 
 function bind(){
  bindMonthPicker();
+ bindWeightChart(state,month);
  on('category-manage',()=>manageCategories(state,modal,categories=>{
    const next=structuredClone(state);next.categories=categories;validate(next);return persist(next);
  }));
