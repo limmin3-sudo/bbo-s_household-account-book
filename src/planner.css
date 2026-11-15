@@ -283,7 +283,7 @@ main > .bottom {grid-column:1/-1;width:100%}
 .settlement > .settlement-used {border-top:0;background:#fffbff}
 .settlement-used span {background:#f1e3f8}
 .day:nth-child(7n) .day-number,.day .day-number.is-holiday,.weekdays span:last-child {color:var(--sunday)}
-.settlement .balance strong {color:var(--sunday)}
+.settlement .balance strong,.budget .balance strong {color:var(--sunday)}
 .saved-plan:empty {display:none}
 .plan-item {display:flex;align-items:flex-start;gap:8px;margin:5px 0}
 .plan-item input[type=checkbox],.plan-complete input[type=checkbox] {width:18px;height:18px;flex-shrink:0;accent-color:#8056a5;margin:5px 0}
