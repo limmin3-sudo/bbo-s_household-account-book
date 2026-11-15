@@ -8,6 +8,28 @@ test('미기록/확인 무지출 구분 및 미래 도장 금지, 지출 추가 
 test('내보내기 roundtrip 및 가져오기 무결성 검사',()=>{const s=empty();s.months['2026-11']={...monthData(s,'2026-11'),memo:'<script>악성</script>'};revise(s,'a',{date:today(),amount:999999999999,deleted:false},'추가');assert.deepEqual(validate(JSON.parse(JSON.stringify(s))),s);for(const f of [null,{schema:2}, {...s,entries:{a:{date:'2026-02-30',amount:1,deleted:false}}},{...s,entries:{a:{date:'2099-01-01',amount:1,deleted:false}}},{...s,entries:{a:{date:today(),amount:-1,deleted:false}}},{...s,months:{'2026-11':{...s.months['2026-11'],budget:NaN}}}])assert.throws(()=>validate(f));});
 import {merchantRanking, suggestedMerchants, merchantRule} from '../src/merchants.js';
 import {weekLabel,proratedWeeks} from '../src/model.js';
+import {holidayName} from '../src/holidays.js';
+import {planItems,readChecklist} from '../src/checklist.js';
+test('공휴일은 크리스마스·음력명절·대체공휴일을 포함한다',()=>{
+  for(const date of ['2026-12-25','2026-02-17','2026-03-02','2027-02-08'])assert.ok(holidayName(date),date);
+  assert.equal(holidayName('2026-11-16'),'');
+});
+test('기존 월별 메모는 읽기만으로 변경되지 않고 체크리스트로 보존된다',()=>{
+  const s=empty(),m='2026-11';
+  s.months[m]={...monthData(s,m),memo:'기존 메모\n두 번째 줄'};
+  const original=JSON.stringify(s);
+  assert.equal(planItems(s.months[m])[0].text,s.months[m].memo);
+  assert.equal(JSON.stringify(s),original);
+  const form=new FormData();
+  form.append('planId','legacy');form.append('planText',s.months[m].memo);form.append('planDone-legacy','on');
+  form.append('planId','new');form.append('planText','새 일정');
+  s.months[m]={...s.months[m],...readChecklist(form)};
+  assert.equal(s.months[m].planItems[0].done,true);
+  assert.equal(s.months[m].planItems[1].done,false);
+  assert.deepEqual(validate(JSON.parse(JSON.stringify(s))),s);
+  s.months[m].planItems[1].id='legacy';
+  assert.throws(()=>validate(s));
+});
 import {carryover,settlementBalance,signedAmount} from '../src/model.js';
 test('수동 이월은 다음 달에 이어지고 0원과 음수를 보존하며 자동으로 복귀할 수 있다',()=>{
   const s=empty();

@@ -14,22 +14,39 @@ async function run() {
       const initialMonth = await trigger.innerText();
       const memoPanel=page.locator('#edit-plan-memo');
       await memoPanel.click();
-      assert.equal(await page.locator('#dialog [name=memo]').inputValue(),'');
-      await page.fill('#dialog [name=memo]','첫 번째 계획');
+      assert.equal(await page.locator('#dialog [name=planText]').inputValue(),'');
+      await page.fill('#dialog [name=planText]','첫 번째 계획');
       await page.click('#modal-save');
       await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
-      assert.equal(await memoPanel.innerText(),'첫 번째 계획');
+      assert.equal(await page.locator(".plan-text").innerText(),'첫 번째 계획');
       await memoPanel.focus();
       await page.keyboard.press('Enter');
       assert.ok(await page.locator('#dialog textarea').evaluate(el=>el===document.activeElement));
       await page.fill('#dialog textarea','취소할 내용');
       await page.keyboard.press('Escape');
-      assert.equal(await memoPanel.innerText(),'첫 번째 계획');
+      assert.equal(await page.locator(".plan-text").innerText(),'첫 번째 계획');
       await memoPanel.click();
       await page.fill('#dialog textarea','수정한 계획');
       await page.click('#modal-save');
       await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
-      assert.equal(await memoPanel.innerText(),'수정한 계획');
+      assert.equal(await page.locator(".plan-text").innerText(),'수정한 계획');
+      await page.locator('.plan-text').click();
+      await page.click('#add-plan-item');
+      await page.locator('[name=planText]').last().fill('두 번째 일정');
+      await page.click('#modal-save');
+      await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
+      assert.equal(await page.locator('.plan-item').count(),2);
+      await page.locator('[data-check-plan]').last().check();
+      await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
+      assert.equal(await page.locator('.completed .plan-text').innerText(),'두 번째 일정');
+      await page.reload();
+      await page.click('#demo');
+      assert.ok(await page.locator('[data-check-plan]').last().isChecked());
+      await page.locator('.plan-text').last().click();
+      await page.locator('.plan-item-editor').last().getByRole('button',{name:'계획 항목 삭제'}).click();
+      await page.click('#modal-save');
+      await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
+      assert.equal(await page.locator('.plan-item').count(),1);
       const currentYear = Number(initialMonth.split('년')[0]);
       await page.evaluate(()=>document.fonts.ready);
       const centered = await page.evaluate(()=>{
@@ -40,6 +57,16 @@ async function run() {
           && ['#prev','#next'].every(s=>Math.abs(midY(box(s))-midY(month))<1);
       });
       assert.ok(centered,'Header month controls are off-center at '+width);
+      await trigger.click();
+      await page.getByRole('button',{name:'12월',exact:true}).click();
+      const christmas=page.locator('[data-date="'+currentYear+'-12-25"] .day-number');
+      assert.ok(await christmas.getAttribute('title'));
+      assert.equal(await christmas.evaluate(e=>getComputedStyle(e).color),await page.locator('.weekdays span:last-child').evaluate(e=>getComputedStyle(e).color));
+      assert.equal(await page.locator('.settlement .balance strong').evaluate(e=>getComputedStyle(e).color),await christmas.evaluate(e=>getComputedStyle(e).color));
+      assert.equal(await page.locator('.zero-control small').count(),0);
+      assert.ok(await page.locator('.topline button').evaluateAll(buttons=>buttons.every(b=>b.getBoundingClientRect().height<=34)));
+      await trigger.click();
+      await page.getByRole('button',{name:initialMonth.split('년 ')[1],exact:true}).click();
       await trigger.click();
       const picker = page.locator('#month-menu');
       assert.equal(await picker.locator('[data-month]').count(),12);
@@ -112,7 +139,7 @@ async function run() {
         const bg=s=>getComputedStyle(document.querySelector(s)).backgroundColor;
         return bg('.settlement .balance strong')==='rgb(242, 239, 248)'
           && bg('.monthly .balance strong')===bg('.weekly .balance')
-          && bg('.settlement-used')==='rgb(246, 244, 248)'
+          && bg('.settlement-used span')===bg('.settlement-items .pair span')
           && getComputedStyle(document.querySelector('.settlement-used')).borderTopWidth==='0px';
       }));
       assert.equal(await page.locator('.topline #export,.topline #import,.topline #trash,.week-range,.bottom').count(),0);
@@ -148,7 +175,7 @@ async function run() {
       assert.equal(await page.locator('.entry-note').textContent(),'수정한 사용처');
       const week = await page.locator('.day.selected').getAttribute('data-date');
       await page.click('#open-plan');
-      await page.fill('[name=memo]','이번 달 여행 준비');
+      await page.fill('[name=planText]','이번 달 여행 준비');
       await page.getByText('월 정산',{exact:true}).click();
       await page.locator('[name=settleValue]').nth(0).fill('2400000');
       await page.locator('[name=settleValue]').nth(1).fill('300000');
@@ -193,10 +220,10 @@ async function run() {
       await page.click('[data-delete]');
       await page.click('#open-plan');
       await page.getByText('기록 내보내기·복원',{exact:true}).click();
-      await page.fill('[name=memo]','복원창을 닫아도 유지할 입력');
+      await page.fill('[name=planText]','복원창을 닫아도 유지할 입력');
       await page.click('#trash');
       await page.locator('dialog').last().getByRole('button',{name:'닫기',exact:true}).click();
-      assert.equal(await page.locator('#dialog [name=memo]').inputValue(),'복원창을 닫아도 유지할 입력');
+      assert.equal(await page.locator('#dialog [name=planText]').inputValue(),'복원창을 닫아도 유지할 입력');
       await page.click('#trash');
       await page.click('[data-restore]');
       await page.click('[data-history]');
@@ -263,7 +290,7 @@ async function run() {
       });
       assert.ok(bounds.note.height>8 && bounds.note.bottom<=bounds.amount.top+1 && bounds.amount.bottom<=bounds.cell.bottom+1,'Memo and amount must remain visible inside their day at '+width+' '+JSON.stringify(bounds));
       assert.equal(await page.locator('.entry').count(),1);
-      assert.equal(await page.locator('.saved-plan').innerText(),'이번 달 여행 준비');
+      assert.equal(await page.locator('.saved-plan .plan-text').innerText(),'이번 달 여행 준비');
       await page.click('#page-fixed');
       await page.click('#open-plan');
       await page.click('[data-add-row=fixed]');

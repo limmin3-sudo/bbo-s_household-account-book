@@ -15,7 +15,7 @@ async function run() {
     await page.click('#demo');
     if (!snapshot) {
       await page.click('#open-plan');
-      await page.fill('[name=memo]','배포 전 테스트 계획');
+      await page.fill('[name=planText]','배포 전 테스트 계획');
       await page.getByText('달·주 예산',{exact:true}).click();
       await page.fill('[name=budget]','50000');
       await page.click('#modal-save');
@@ -33,10 +33,19 @@ async function run() {
     }
     const read = ()=>page.evaluate(()=>localStorage.getItem('bbo-demo-v1'));
     assert.equal(await read(),snapshot.raw);
+    const storedDate=Object.values(JSON.parse(snapshot.raw).entries)[0].date;
+    await page.click('#pick-month');
+    const targetYear=Number(storedDate.slice(0,4));
+    const currentYear=Number((await page.locator('.picker-year b').innerText()).slice(0,4));
+    for(let i=0;i<Math.abs(targetYear-currentYear);i++){
+      await page.getByRole('button',{name:targetYear<currentYear?'이전 연도':'다음 연도'}).click();
+    }
+    await page.locator('[data-month="'+storedDate.slice(0,7)+'"]').click();
+    await page.locator('[data-date="'+storedDate+'"]').click();
     assert.equal(await page.locator('.entry-note').innerText(),'테스트 가게');
     assert.equal(await page.locator('.day.selected .day-amount').innerText(),'3,200');
     assert.equal(await page.locator('.calendar-note').innerText(),'배포 전 테스트 메모');
-    assert.equal(await page.locator('.saved-plan').innerText(),'배포 전 테스트 계획');
+    assert.equal(await page.locator('.saved-plan .plan-text').innerText(),'배포 전 테스트 계획');
     assert.equal(await page.locator('.monthly .budget-top strong').innerText(),'50,000원');
 
     const second=await context.newPage();

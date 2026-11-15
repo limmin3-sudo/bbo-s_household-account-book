@@ -5,6 +5,7 @@
 }
 :root {
   --ink: #382341;
+  --sunday:#bb718f;
   --rule: #d5bfdf;
   --ribbon: url('/assets/planner/ribbon.svg');
   --key: url('/assets/planner/key.svg');
@@ -128,7 +129,7 @@ h1,h2,h3,button,.brand h1,.calendar-title h2,.detail-title h2,.card>h2,.month-sw
 header { background:linear-gradient(110deg,#312940,#514268 70%,#393047); }
 .card>h2,.calendar-title,.detail-title { color:#392b48; background:linear-gradient(100deg,#e7daf4,#f3edf9); border:1px solid #dbcae7; }
 .detail-title>span {color:#675378}
-#app button:not(.day):not(.plot-day):not(#prev):not(#next):not(:where(#pick-month, #edit-plan-memo, .picker-year button, [data-month][aria-pressed=true], .category-picker button, .merchant-picker button)) {
+#app button:not(.day):not(.plot-day):not(#prev):not(#next):not(:where(#pick-month, #edit-plan-memo, .plan-text, .picker-year button, [data-month][aria-pressed=true], .category-picker button, .merchant-picker button)) {
   border:1px solid #c9b5d9; border-radius:18px; background:#fcfaff url('/assets/planner/pill.svg') center/100% 100%;
   color:#483258; box-shadow:inset 0 1px 0 #fff,0 1px 2px #442e5a18;
   line-height:1.35; font-family:var(--ui-font); font-weight:700; white-space:normal; word-break:keep-all;
@@ -279,8 +280,21 @@ main > .bottom {grid-column:1/-1;width:100%}
 .day:has(.stamp) .calendar-note {grid-row:2}
 .day:has(.stamp) .stamp {grid-row:3;min-height:0;height:100%;overflow:hidden}
 .settlement .balance strong,.budget.monthly .balance strong {background:#f2eff8}
-.settlement > .settlement-used {border-top:0;background:#f6f4f8}
-.settlement-used span {background:#e9e4ee}
+.settlement > .settlement-used {border-top:0;background:#fffbff}
+.settlement-used span {background:#f1e3f8}
+.day:nth-child(7n) .day-number,.day .day-number.is-holiday,.weekdays span:last-child {color:var(--sunday)}
+.settlement .balance strong {color:var(--sunday)}
+.saved-plan:empty {display:none}
+.plan-item {display:flex;align-items:flex-start;gap:8px;margin:5px 0}
+.plan-item input[type=checkbox],.plan-complete input[type=checkbox] {width:18px;height:18px;flex-shrink:0;accent-color:#8056a5;margin:5px 0}
+#app .memo .plan-text {display:block;min-height:28px;flex:1;min-width:0;padding:0;border:0;background:transparent;text-align:start;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;font-family:var(--ui-font);color:#44374d}
+.completed .plan-text {text-decoration:line-through;opacity:.6}
+.plan-item-editor {border-bottom:1px solid var(--rule);padding-bottom:10px;margin-bottom:10px}
+.plan-item-editor .plan-complete {display:flex;align-items:center;gap:7px;margin:4px 0}
+.plan-item-editor label {margin:6px 0}
+.topline {padding-block:6px}
+#app .topline button:not(.day):not(.plot-day):not(#prev):not(#next) {min-height:26px;padding:2px 9px;border-radius:7px;line-height:1.2;font-size:14px}
+.topline .icon {width:17px;height:17px}
 @media(min-width:901px) {
   main:not(.report-layout) {grid-template-rows:minmax(0,1fr)}
 }
@@ -288,7 +302,9 @@ main > .bottom {grid-column:1/-1;width:100%}
   .day:has(.stamp) {grid-template-rows:auto calc(clamp(10px,1.7dvh,13px)*1.15) minmax(0,1fr);padding-block:1px;row-gap:1px}
 }
 @media(max-width:900px) {
-  .topline {grid-template-columns:minmax(0,1fr) auto;gap:4px}
-  .topline #status {grid-column:1/-1;grid-row:2}
+  .topline {grid-template-columns:minmax(0,1fr);gap:4px}
+  .topline .page-switch {grid-row:1;justify-self:start;grid-template-columns:repeat(3,max-content)}
+  .topline .plan-actions {grid-row:2;justify-self:end}
+  .topline #status {grid-column:1/-1;grid-row:3}
   .day:has(.stamp) {grid-template-rows:auto 13.75px minmax(0,1fr);padding-block:2px;row-gap:1px}
 }

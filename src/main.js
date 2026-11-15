@@ -1,6 +1,8 @@
 import {expenseDetails,bindCategories,manageCategories,categoryName} from './categories.js';
 import {merchantRanking,merchantRule,merchantCategoryKey} from './merchants.js';
 import {planEditor, bindPlanRows, readPlan, fixedPage} from './plan.js';
+import {checklistPanel,checklistEditor,bindChecklist,readChecklist,planItems} from './checklist.js';
+import {holidayName} from './holidays.js';
 import {reportPage} from './report.js';
 let activePage = 'calendar';
 import './style.css';
@@ -87,7 +89,7 @@ function render(){
  <div class="topline"><nav class="page-switch" aria-label="가계부 페이지"><button id="page-calendar" aria-pressed="${activePage === 'calendar'}">${icon('calendar')}달력</button><button id="page-report" aria-pressed="${activePage === 'report'}">${icon('report')}월간 리포트</button><button id="page-fixed" aria-pressed="${activePage === 'fixed'}">${icon('wallet')}고정지출</button></nav><p role="status" aria-live="polite" id="status">${esc(status)}</p><nav class="plan-actions" aria-label="계획 및 카테고리"><button id="open-plan" ${canEdit()?'':'disabled'}>${icon('memo')}이달의 계획</button><button id="category-manage" ${canEdit()?'':'disabled'}>${icon('edit')}카테고리 관리</button>${failed?btn('retry','다시 저장')+btn('reload','최신 데이터 불러오기'):''}</nav></div>
  ${activePage === 'report' ? reportPage(state,month) : activePage === 'fixed' ? fixedPage(c,month) : `<main><aside class="left">${settlementCard(c.settlement,t.used)}${budgetCard('이번 달 예산','monthly',t.used,t.remaining,c.budget)}${budgetCard(isCurrent?'이번 주 예산':'선택한 주 예산','weekly',t.weekUsed,t.weekRemaining,c.weeks[current]||0)}</aside>
  <section class="card calendar-card" aria-label="월간 달력"><div class="calendar-title"><h2>${icon('calendar')}${month.slice(0,4)}년 ${+month.slice(5)}월</h2>${btn('today','오늘','','quiet')}</div><div class="calendar"><div class="weekdays">${['월','화','수','목','금','토','일'].map(x=>`<span>${x}</span>`).join('')}</div><div class="days" style="--calendar-weeks:${ws.length}">${calendar()}</div></div></section>
- <aside class="right"><section class="card memo"><h2>${icon('memo')}월별 계획·메모</h2><button type="button" id="edit-plan-memo" class="saved-plan" aria-label="월별 계획·메모 편집">${esc(c.memo || '눌러서 이번 달 계획을 적어보세요.')}</button></section><section class="card detail"><div class="detail-title"><h2>${icon('calendar')}${+selected.slice(5,7)}월 ${+selected.slice(8)}일</h2><span>${['일','월','화','수','목','금','토'][new Date(selected+'T12:00:00').getDay()]}요일</span></div><div class="day-summary"><span>선택일 합계</span><strong>${money(dayTotal(state,selected))}원</strong></div><div id="entries">${entryRows()}</div>${c.dayNotes?.[selected] ? `<p class="saved-day-note"><b>날짜 메모</b>${esc(c.dayNotes[selected])}</p>` : ''}${selected<=today()?`<button id="detail-add" class="primary wide">${icon('add')} 지출·메모 입력</button><div class="zero-control">${btn('zero',stamped(state,selected)?'무지출 확인 취소':'무지출로 확인','stamp','quiet wide')}<small>기록하지 않은 날은 도장을 찍지 않아요.</small></div>`:'<button id="detail-add" class="primary wide">날짜 메모 입력</button>'}</section></aside></main>`}
+ <aside class="right"><section class="card memo"><h2>${icon('memo')}월별 계획·메모</h2>${checklistPanel(c,canEdit())}</section><section class="card detail"><div class="detail-title"><h2>${icon('calendar')}${+selected.slice(5,7)}월 ${+selected.slice(8)}일</h2><span>${['일','월','화','수','목','금','토'][new Date(selected+'T12:00:00').getDay()]}요일</span></div><div class="day-summary"><span>선택일 합계</span><strong>${money(dayTotal(state,selected))}원</strong></div><div id="entries">${entryRows()}</div>${c.dayNotes?.[selected] ? `<p class="saved-day-note"><b>날짜 메모</b>${esc(c.dayNotes[selected])}</p>` : ''}${selected<=today()?`<button id="detail-add" class="primary wide">${icon('add')} 지출·메모 입력</button><div class="zero-control">${btn('zero',stamped(state,selected)?'무지출 확인 취소':'무지출로 확인','stamp','quiet wide')}</div>`:'<button id="detail-add" class="primary wide">날짜 메모 입력</button>'}</section></aside></main>`}
  ${undo?`<div class="toast" role="status">휴지통으로 이동했어요. ${btn('undo','되돌리기','restore')}</div>`:''}<dialog id="dialog"></dialog><input id="file" type="file" accept="application/json,.json" hidden>`;
  bind();if(!canEdit())document.querySelectorAll('main:not(.report-layout) input,main:not(.report-layout) textarea,main:not(.report-layout) button:not(#prev):not(#next):not(#today):not(.day)').forEach(e=>e.disabled=true);
 }
@@ -103,9 +105,10 @@ function calendar() {
     const total = dayTotal(state, date);
     const note = notes[date] || '';
     const zero = stamped(state, date);
-    const label = [date, total ? money(total)+'원' : '', zero ? '무지출 성공' : '', note].filter(Boolean).join(', ');
+    const holiday=holidayName(date);
+    const label = [date,holiday, total ? money(total)+'원' : '', zero ? '무지출 성공' : '', note].filter(Boolean).join(', ');
     cells.push(`<button class="day ${date===selected?'selected':''} ${date===today()?'is-today':''}" data-date="${date}" aria-label="${esc(label)}" aria-pressed="${date===selected}">
-      <span class="day-number">${day}</span>
+      <span class="day-number ${holiday?'is-holiday':''}" ${holiday?`title="${esc(holiday)}"`:''}>${day}</span>
       ${note ? `<span class="calendar-note" title="${esc(note)}">${esc(note)}</span>` : ''}
       ${total ? `<span class="day-amount">${money(total).replaceAll(',',',<wbr>')}</span>` : ''}
       ${zero ? '<span class="stamp"><img src="/assets/planner/seal.webp" alt="무지출성공!"></span>' : ''}
@@ -204,12 +207,22 @@ function bind(){
  on('undo',()=>{const id=undo;undo=null;change(s=>revise(s,id,{deleted:false},'삭제 되돌리기'));});
  on('zero',()=>{if(dayTotal(state,selected)>0){statusText('지출이 있는 날짜는 무지출로 확인할 수 없어요.');return;}change(s=>{s.closed[selected]=!s.closed[selected];});});
  on('open-plan', openMonthlyPlan);
- on('edit-plan-memo',()=>{
+ const editPlans=()=>{
    const key=month;
-   modal(key+' 월별 계획·메모',`<label>계획·메모<textarea name="memo" rows="6" maxlength="10000">${esc(monthData(state,key).memo)}</textarea></label>`,form=>{
-     return change(next=>{next.months[key]={...monthData(next,key),memo:form.get('memo')};});
+   const dialog=modal(key+' 월별 계획·메모',checklistEditor(monthData(state,key)),form=>{
+     return change(next=>{next.months[key]={...monthData(next,key),...readChecklist(form)};});
    });
-   $('#dialog textarea').focus();
+   bindChecklist(dialog.querySelector('form'));
+   dialog.querySelector('textarea')?.focus();
+ };
+ on('edit-plan-memo',editPlans);
+ document.querySelectorAll('[data-edit-plan]').forEach(button=>button.onclick=editPlans);
+ document.querySelectorAll('[data-check-plan]').forEach(input=>input.onchange=()=>{
+   const key=month,id=input.dataset.checkPlan,done=input.checked;
+   change(next=>{
+     const config=monthData(next,key);
+     next.months[key]={...config,planItems:planItems(config).map(item=>item.id===id?{...item,done}:item)};
+   });
  });
  on('detail-add',()=>openDayEditor(selected));
  on('retry',()=>{if(!failed)return;if(!pending){connect(user);return;}failed=false;ready=true;persist(structuredClone(state));});on('reload',()=>{modal('최신 데이터 불러오기','<p>현재 입력을 파일로 내보낸 뒤 서버의 최신 기록을 불러옵니다.</p><button type="button" id="reload-confirm">파일 보관 후 불러오기</button>');on('reload-confirm',()=>{download(state);pending=false;busy=false;failed=false;if(demo)startDemo();else connect(user);});});

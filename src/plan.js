@@ -1,4 +1,5 @@
 import {amount, signedAmount, monthData, money, proratedWeeks, weekLabel, weeks} from './model.js';
+import {checklistEditor,bindChecklist,readChecklist} from './checklist.js';
 
 const escape = value => String(value).replace(/[&<>"']/g, char =>
   ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char]);
@@ -30,7 +31,7 @@ export function planEditor(config, month, initial = 'memo', automaticCarryover =
     <label>이월 (원 · 양수/음수)<input name="carryover" type="text" value="${config.carryover??automaticCarryover}" data-automatic="${automaticCarryover}" ${config.carryover===undefined?'disabled':''}></label>
     <p class="muted">체크를 해제하고 저장하면 지난달 정산잔액을 자동으로 사용해요.</p></div>`;
   const parts = [
-    ['memo','월별 계획',`<label>계획·메모<textarea name="memo" rows="6" maxlength="10000">${escape(config.memo)}</textarea></label>`],
+    ['memo','월별 계획',checklistEditor(config)],
     ['settle','월 정산',opening+config.settlement.filter(r=>r.name!=='고정지출').map(r=>editableRow(r,'settle')).join('')+'<button type="button" data-add-row="settle">정산 항목 추가</button><p class="muted">고정지출은 아래 항목의 합계로 표시해요.</p>'],
     ['fixed','고정지출',fixedItems(config).map(r=>editableRow(r,'fixed')).join('')+'<button type="button" data-add-row="fixed">고정지출 추가</button>'],
     ['budgets','달·주 예산',`<label>달 예산 (원)<input name="budget" inputmode="numeric" value="${config.budget}" required></label>
@@ -43,6 +44,7 @@ export function planEditor(config, month, initial = 'memo', automaticCarryover =
 }
 
 export function bindPlanRows(form,month) {
+  bindChecklist(form);
   const manual=form.elements.manualCarryover;
   const opening=form.elements.carryover;
   manual.onchange=()=>{
@@ -90,7 +92,7 @@ export function readPlan(form, state, month) {
   const original=monthData(state,month);
   const index=original.settlement.findIndex(row=>row.name==='고정지출');
   settlement.splice(index<0?settlement.length:index,0,{name:'고정지출',value:fixedTotal});
-  const config={...original,memo:form.get('memo'),budget:amount(form.get('budget')),settlement,fixedExpenses,
+  const config={...original,...readChecklist(form),budget:amount(form.get('budget')),settlement,fixedExpenses,
     weeks:Object.fromEntries(weeks(month).map(w=>[w,amount(form.get(w))]))};
   if(form.get('weeklyBase').trim())config.weeklyBase=amount(form.get('weeklyBase'));
   else delete config.weeklyBase;
