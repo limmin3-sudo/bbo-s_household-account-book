@@ -1,4 +1,4 @@
-import {monthData,today} from './model.js';
+import {monthData} from './model.js';
 
 export function weight(value) {
   const text=String(value).trim();
@@ -11,7 +11,7 @@ export function weightRecords(state,month) {
   return Object.entries(monthData(state,month).weights || {}).sort(([a],[b])=>a.localeCompare(b));
 }
 const kg=value=>value.toFixed(1)+'kg';
-export function weightPage(state,month,editable,selected=month+'-01') {
+export function weightPage(state,month) {
   const records=weightRecords(state,month);
   const first=records[0]?.[1],last=records.at(-1)?.[1];
   const delta=records.length>1 ? Math.round((last-first)*10)/10 : null;
@@ -25,8 +25,6 @@ export function weightPage(state,month,editable,selected=month+'-01') {
       <div><span>이달의 변화</span><strong>${change}</strong><small>${records.length}일 기록 · 첫 기록 대비</small></div>
     </div>
     <section class="weight-chart"><h3>체중 변화</h3>${records.length ? chart(records,month) : '<p class="weight-empty">아직 몸무게 기록이 없어요.<br>달력에서 날짜를 선택한 뒤 지출·메모 입력에서 몸무게를 기록해주세요.</p>'}</section>
-    <button id="weight-add" class="primary" ${editable && selected<=today()?'':'disabled'}>${selected} 몸무게 기록</button>
-    ${records.length ? `<div class="weight-records"><h3>날짜별 기록</h3><p class="muted">날짜를 누르면 기록을 수정할 수 있어요. 입력값을 비우고 저장하면 삭제됩니다.</p><ul>${[...records].reverse().map(([date,value])=>`<li><button type="button" data-weight-date="${date}" ${editable?'':'disabled'} aria-label="${date} ${kg(value)} 수정"><span>${date}</span><strong>${kg(value)}</strong><span>수정</span></button></li>`).join('')}</ul></div>` : ''}
     </div></section></main>`;
 }
 function chart(records,month) {

@@ -317,16 +317,13 @@ main > .bottom {grid-column:1/-1;width:100%}
 .weight-stats span,.weight-stats small {color:#776181}
 .weight-stats strong {color:#8056a5;font-size:clamp(18px,2vw,28px);overflow-wrap:anywhere}
 .weight-chart {border:1px solid var(--rule);border-radius:12px;padding:16px;margin-bottom:16px}
-.weight-chart h3,.weight-records h3 {margin:0 0 10px}
+.weight-chart h3 {margin:0 0 10px}
 .weight-chart svg {display:block;width:100%;height:auto;max-height:360px;margin-top:12px;overflow:visible}
 .weight-chart text {font:13px system-ui,sans-serif;fill:#776181}
 .weight-grid {stroke:#e8dfef;stroke-width:1}
 .weight-line {fill:none;stroke:#8056a5;stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
 .weight-point {fill:#bb718f;stroke:white;stroke-width:2}
 .weight-empty {text-align:center;padding:32px 8px;color:#776181;line-height:1.8}
-.weight-records {margin-top:24px}
-.weight-records ul {list-style:none;padding:0;margin:10px 0}
-.weight-records button {width:100%;justify-content:space-between;margin:4px 0;text-align:left}
 @media(min-width:901px) {
   .weight-page {display:flex;flex-direction:column;max-height:100%;overflow:hidden}
 }

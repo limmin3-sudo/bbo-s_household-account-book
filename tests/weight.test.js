@@ -15,7 +15,7 @@ test('체중은 지출과 무지출 확인에 영향을 주지 않고 내보내�
   assert.deepEqual(validate(JSON.parse(JSON.stringify(s))),s);
   assert.equal(totals(s,month,'2026-01-05').used,0);
   assert.equal(stamped(s,'2026-01-05'),false);
-  assert.match(weightPage(s,month,true),/2.4kg 감량/);
+  assert.match(weightPage(s,month),/2.4kg 감량/);
   assert.equal(weightRecords(s,'2026-02').length,0);
   assert.doesNotThrow(()=>validate(empty()));
 });
@@ -29,10 +29,10 @@ test('체중 저장 데이터는 유효한 같은 달의 과거 날짜와 숫자
 });
 test('체중 그래프는 빈 기록과 한 점·동일 체중·증가를 올바르게 표시한다',()=>{
   const s=empty(),m='2026-01';
-  assert.match(weightPage(s,m,true),/아직 몸무게 기록이 없어요/);
+  assert.match(weightPage(s,m),/아직 몸무게 기록이 없어요/);
   for(const values of [[60],[60,60],[60,61]]) {
     s.months[m]={...monthData(s,m),weights:Object.fromEntries(values.map((v,i)=>['2026-01-0'+(i+1),v]))};
-    const html=weightPage(s,m,true);
+    const html=weightPage(s,m);
     assert.doesNotMatch(html,/NaN|Infinity/);
     assert.match(html,values.length===1?/기록 2개부터 표시/:values[1]===60?/변화 없음/:/1.0kg 증가/);
   }
