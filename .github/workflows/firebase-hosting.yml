@@ -30,7 +30,7 @@ jobs:
           pnpm install --frozen-lockfile
       - name: Test and build
         run: |
-          node --test tests/model.test.js
+          node --test tests/model.test.js tests/weight.test.js
           pnpm run build
           printf '%s\n' "$GITHUB_SHA" > dist/revision.txt
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3

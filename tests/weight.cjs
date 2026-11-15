@@ -1,0 +1,72 @@
+const assert=require('node:assert/strict');
+const {chromium}=require('playwright');
+(async()=>{
+ const browser=await chromium.launch({channel:'chrome',headless:true});
+ try {
+  for(const width of [1440,393]) {
+   const page=await browser.newPage({viewport:{width,height:900}});
+   const errors=[];page.on('pageerror',e=>errors.push(e.message));
+   await page.goto(process.argv[2]);
+   await page.click('#demo');
+   const dates=await page.locator('.day[data-date]').evaluateAll(els=>els.filter(el=>!el.disabled).map(el=>el.dataset.date));
+   const date1=dates[0],date2=dates[1];
+   const save=async(date,value)=>{
+    await page.locator(`[data-date="${date}"]`).click();
+    await page.click('#detail-add');
+    await page.fill('[name=weight]',value);
+    await page.click('#modal-save');
+    await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
+   };
+   await save(date1,'72.5');await save(date2,'71.2');
+   const raw=await page.evaluate(()=>JSON.parse(localStorage.getItem('bbo-demo-v1')));
+   assert.equal(Object.keys(raw.entries).length,0);
+   assert.equal(raw.months[date1.slice(0,7)].weights[date2],71.2);
+   assert.doesNotMatch(await page.locator('.days').innerText(),/72\.5|71\.2|kg/);
+   assert.equal(await page.locator('.monthly .pair b').innerText(),'0원');
+   assert.equal(await page.locator('#page-weight').evaluate(el=>el.nextElementSibling.id),'open-plan');
+   await page.click('#page-weight');
+   assert.match(await page.locator('.weight-stats').innerText(),/1.3kg 감량/);
+   assert.equal(await page.locator('.weight-point').count(),2);
+   const points=await page.locator('.weight-point').evaluateAll(els=>els.map(el=>Number(el.getAttribute('cy'))));
+   assert.ok(points[1]>points[0],'lower weight must plot lower');
+   assert.equal(await page.locator('.weight-layout').evaluate(el=>el.scrollWidth<=innerWidth),true);
+   await page.screenshot({path:`/tmp/bbo-weight-${width}.png`,fullPage:true});
+   await page.locator(`[data-weight-date="${date2}"]`).click();
+   assert.equal(await page.locator('[name=weight]').inputValue(),'71.2');
+   await page.fill('[name=weight]','70.5');
+   await page.click('#modal-save');
+   await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
+   assert.match(await page.locator('.weight-stats').innerText(),/2.0kg 감량/);
+   await page.reload();await page.click('#demo');await page.click('#page-weight');
+   assert.match(await page.locator('.weight-stats').innerText(),/2.0kg 감량/);
+   await page.locator(`[data-weight-date="${date2}"]`).click();
+   await page.fill('[name=weight]','-5');await page.click('#modal-save');
+   assert.match(await page.locator('#modal-error').innerText(),/몸무게/);
+   await page.fill('[name=weight]','');await page.click('#modal-save');
+   await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
+   assert.equal(await page.locator('.weight-point').count(),1);
+   await page.click('#page-calendar');await page.locator(`[data-date="${date1}"]`).click();
+   await page.click('#detail-add');
+   assert.equal(await page.locator('[name=weight]').inputValue(),'72.5');
+   await page.fill('[name=amount]','3200');await page.fill('[name=dayNote]','날짜 메모');
+   await page.click('#modal-save');await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
+   assert.match(await page.locator('.days').innerText(),/3,200/);
+   assert.match(await page.locator('.days').innerText(),/날짜 메모/);
+   assert.doesNotMatch(await page.locator('.days').innerText(),/72\.5|kg/);
+   await page.click('#open-plan');
+   await page.getByText('달·주 예산',{exact:true}).click();
+   await page.fill('[name=budget]','50000');await page.click('#modal-save');
+   await page.locator('#status').filter({hasText:'기기에 저장 완료'}).waitFor();
+   await page.click('#page-weight');
+   assert.equal(await page.locator('.weight-point').count(),1);
+   await page.click('#prev');
+   assert.equal(await page.locator('.weight-point').count(),0);
+   await page.click('#next');
+   assert.equal(await page.locator('.weight-point').count(),1);
+   assert.equal(await page.locator('#page-weight').evaluate(el=>getComputedStyle(el).color),'rgb(255, 255, 255)');
+   assert.deepEqual(errors,[]);
+   console.log(width+'px: weight-only save, graph, edit, delete, validation, reload, expense isolation PASS');
+   await page.close();
+  }
+ } finally {await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

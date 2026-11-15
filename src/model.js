@@ -86,6 +86,7 @@ export function validate(s){
    }
    if(config.carryover!==undefined && (!Number.isSafeInteger(config.carryover)||Math.abs(config.carryover)>MAX))throw Error('이월 금액이 올바르지 않습니다.');
    if(config.weeklyBase!==undefined && !val(config.weeklyBase))throw Error('기준 주 예산이 올바르지 않습니다.');
+   if(config.weights!==undefined && (!isMap(config.weights) || Object.entries(config.weights).some(([day,value])=>!date(day)||day.slice(0,7)!==month||day>today()||typeof value!=='number'||!Number.isFinite(value)||value<1||value>500||Math.abs(value*10-Math.round(value*10))>1e-9)))throw Error('몸무게 기록이 올바르지 않습니다.');
    if(config.dayNotes!==undefined && (!isMap(config.dayNotes) || Object.entries(config.dayNotes).some(([day,note])=>!date(day)||day.slice(0,7)!==month||typeof note!=='string'||note.length>2000)))throw Error('날짜 메모가 올바르지 않습니다.');
    if(config.fixedExpenses!==undefined){
      const rows=config.fixedExpenses;

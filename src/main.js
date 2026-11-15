@@ -4,6 +4,7 @@ import {planEditor, bindPlanRows, readPlan, fixedPage} from './plan.js';
 import {checklistPanel,checklistEditor,bindChecklist,readChecklist,planItems} from './checklist.js';
 import {holidayName} from './holidays.js';
 import {reportPage} from './report.js';
+import {weight,weightPage} from './weight.js';
 let activePage = 'calendar';
 import './style.css';
 import './planner.css';
@@ -86,8 +87,8 @@ function settlementCard(rows,used) {
 function render(){
  const c=monthData(state,month),ws=weeks(month),current=selected.startsWith(month)?weekStart(selected):ws[0],t=totals(state,month,current),isCurrent=month===today().slice(0,7)&&current===weekStart(today());
  $('#app').innerHTML=`<header><div class="brand"><img src="/assets/planner/hello.webp" alt="쿠로미"/><div><h1>뽀 가계부</h1></div></div><div class="month-switch"><button id="prev" aria-label="이전 달">${icon('prev')}</button><button type="button" id="pick-month" popovertarget="month-menu" aria-label="${month.slice(0,4)}년 ${+month.slice(5)}월, 월 선택">${month.slice(0,4)}년 ${+month.slice(5)}월</button><div id="month-menu" popover aria-label="월 선택"></div><button id="next" aria-label="다음 달">${icon('next')}</button></div><div class="account">${demo?'<span class="demo-label">체험 모드 · 이 기기에만 저장</span>':user?`<span>${esc(user.displayName||'Google 계정')}</span>`:''}${btn('login',user?'로그아웃':'Google 로그인','heart',user?'':'primary')}${!user?btn('demo',demo?'체험 종료':'테스트 데이터로 체험','spark'):''}</div></header>
- <div class="topline"><nav class="page-switch" aria-label="가계부 페이지"><button id="page-calendar" aria-pressed="${activePage === 'calendar'}">${icon('calendar')}달력</button><button id="page-report" aria-pressed="${activePage === 'report'}">${icon('report')}월간 리포트</button><button id="page-fixed" aria-pressed="${activePage === 'fixed'}">${icon('wallet')}고정지출</button></nav><p role="status" aria-live="polite" id="status">${esc(status)}</p><nav class="plan-actions" aria-label="계획 및 카테고리"><button id="open-plan" ${canEdit()?'':'disabled'}>${icon('memo')}이달의 계획</button><button id="category-manage" ${canEdit()?'':'disabled'}>${icon('edit')}카테고리 관리</button>${failed?btn('retry','다시 저장')+btn('reload','최신 데이터 불러오기'):''}</nav></div>
- ${activePage === 'report' ? reportPage(state,month) : activePage === 'fixed' ? fixedPage(c,month) : `<main><aside class="left">${settlementCard(c.settlement,t.used)}${budgetCard('이번 달 예산','monthly',t.used,t.remaining,c.budget)}${budgetCard(isCurrent?'이번 주 예산':'선택한 주 예산','weekly',t.weekUsed,t.weekRemaining,c.weeks[current]||0)}</aside>
+ <div class="topline"><nav class="page-switch" aria-label="가계부 페이지"><button id="page-calendar" aria-pressed="${activePage === 'calendar'}">${icon('calendar')}달력</button><button id="page-report" aria-pressed="${activePage === 'report'}">${icon('report')}월간 리포트</button><button id="page-fixed" aria-pressed="${activePage === 'fixed'}">${icon('wallet')}고정지출</button></nav><p role="status" aria-live="polite" id="status">${esc(status)}</p><nav class="plan-actions" aria-label="계획 및 카테고리"><button id="page-weight" aria-pressed="${activePage === 'weight'}">체중</button><button id="open-plan" ${canEdit()?'':'disabled'}>${icon('memo')}이달의 계획</button><button id="category-manage" ${canEdit()?'':'disabled'}>${icon('edit')}카테고리 관리</button>${failed?btn('retry','다시 저장')+btn('reload','최신 데이터 불러오기'):''}</nav></div>
+ ${activePage === 'weight' ? weightPage(state,month,canEdit(),selected) : activePage === 'report' ? reportPage(state,month) : activePage === 'fixed' ? fixedPage(c,month) : `<main><aside class="left">${settlementCard(c.settlement,t.used)}${budgetCard('이번 달 예산','monthly',t.used,t.remaining,c.budget)}${budgetCard(isCurrent?'이번 주 예산':'선택한 주 예산','weekly',t.weekUsed,t.weekRemaining,c.weeks[current]||0)}</aside>
  <section class="card calendar-card" aria-label="월간 달력"><div class="calendar-title"><h2>${icon('calendar')}${month.slice(0,4)}년 ${+month.slice(5)}월</h2>${btn('today','오늘','','quiet')}</div><div class="calendar"><div class="weekdays">${['월','화','수','목','금','토','일'].map(x=>`<span>${x}</span>`).join('')}</div><div class="days" style="--calendar-weeks:${ws.length}">${calendar()}</div></div></section>
  <aside class="right"><section class="card memo"><h2>${icon('memo')}월별 계획·메모</h2>${checklistPanel(c,canEdit())}</section><section class="card detail"><div class="detail-title"><h2>${icon('calendar')}${+selected.slice(5,7)}월 ${+selected.slice(8)}일</h2><span>${['일','월','화','수','목','금','토'][new Date(selected+'T12:00:00').getDay()]}요일</span></div><div class="day-summary"><span>선택일 합계</span><strong>${money(dayTotal(state,selected))}원</strong></div><div id="entries">${entryRows()}</div>${c.dayNotes?.[selected] ? `<p class="saved-day-note"><b>날짜 메모</b>${esc(c.dayNotes[selected])}</p>` : ''}${selected<=today()?`<button id="detail-add" class="primary wide">${icon('add')} 지출·메모 입력</button><div class="zero-control">${btn('zero',stamped(state,selected)?'무지출 확인 취소':'무지출로 확인','stamp','quiet wide')}</div>`:'<button id="detail-add" class="primary wide">날짜 메모 입력</button>'}</section></aside></main>`}
  ${undo?`<div class="toast" role="status">휴지통으로 이동했어요. ${btn('undo','되돌리기','restore')}</div>`:''}<dialog id="dialog"></dialog><input id="file" type="file" accept="application/json,.json" hidden>`;
@@ -145,14 +146,17 @@ function openMonthlyPlan() {
 function openDayEditor(date) {
   const key = date.slice(0,7);
   const previous = monthData(state,key).dayNotes?.[date] || '';
+  const previousWeight = monthData(state,key).weights?.[date];
+  const weightField = date <= today() ? `<label>아침 몸무게 (kg)<input name="weight" type="text" inputmode="decimal" value="${previousWeight ?? ''}" placeholder="예: 65.2" aria-describedby="weight-hint"></label><p id="weight-hint" class="muted">몸무게만 저장할 수 있어요. 체중 탭에서만 표시되며, 값을 비우고 저장하면 삭제됩니다.</p>` : '';
   const expenseFields = date <= today() ? `<label>사용 금액 (원)<input name="amount" inputmode="numeric" placeholder="0" autofocus></label>
     ${expenseDetails(state)}` : '';
-  modal(date + ' 기록', expenseFields + `<label>날짜 메모<textarea name="dayNote" rows="3" maxlength="2000" placeholder="금액 없이 메모만 저장할 수도 있어요.">${esc(previous)}</textarea></label>`, form => {
+  modal(date + ' 기록', expenseFields + weightField + `<label>날짜 메모<textarea name="dayNote" rows="3" maxlength="2000" placeholder="금액 없이 메모만 저장할 수도 있어요.">${esc(previous)}</textarea></label>`, form => {
     const raw = String(form.get('amount') || '').trim();
     const note = String(form.get('use') || '').trim();
     const memo = form.get('dayNote').trim();
     if (!raw && (note || form.get('purchase')?.trim() || form.get('categoryId'))) throw Error('사용처와 함께 기록할 금액을 입력해주세요.');
-    if (!raw && !memo && !previous) throw Error('금액 또는 날짜 메모를 입력해주세요.');
+    const rawWeight = String(form.get('weight') || '').trim();
+    if (!raw && !memo && !previous && !rawWeight && previousWeight === undefined) throw Error('금액, 날짜 메모 또는 몸무게를 입력해주세요.');
     const next = structuredClone(state);
     if (raw) {
       const value = amount(raw);
@@ -163,7 +167,10 @@ function openDayEditor(date) {
     const dayNotes = {...config.dayNotes};
     if (memo) dayNotes[date] = memo;
     else delete dayNotes[date];
-    next.months[key] = {...config,dayNotes};
+    const weights = {...config.weights};
+    if (rawWeight) weights[date] = weight(rawWeight);
+    else delete weights[date];
+    next.months[key] = {...config,dayNotes,...(date <= today() ? {weights} : {})};
     validate(next);
     return persist(next);
   });
@@ -176,7 +183,7 @@ function bind(){
  on('category-manage',()=>manageCategories(state,modal,categories=>{
    const next=structuredClone(state);next.categories=categories;validate(next);return persist(next);
  }));
- for (const page of ['calendar','report','fixed']) {
+ for (const page of ['calendar','report','fixed','weight']) {
    on('page-' + page, () => {
      activePage = page;
      render();
@@ -225,6 +232,8 @@ function bind(){
    });
  });
  on('detail-add',()=>openDayEditor(selected));
+ on('weight-add',()=>openDayEditor(selected));
+ document.querySelectorAll('[data-weight-date]').forEach(button=>button.onclick=()=>openDayEditor(button.dataset.weightDate));
  on('retry',()=>{if(!failed)return;if(!pending){connect(user);return;}failed=false;ready=true;persist(structuredClone(state));});on('reload',()=>{modal('최신 데이터 불러오기','<p>현재 입력을 파일로 내보낸 뒤 서버의 최신 기록을 불러옵니다.</p><button type="button" id="reload-confirm">파일 보관 후 불러오기</button>');on('reload-confirm',()=>{download(state);pending=false;busy=false;failed=false;if(demo)startDemo();else connect(user);});});
  bindDataControls();$('#file').onchange=importFile;
 }
