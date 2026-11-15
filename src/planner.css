@@ -318,7 +318,8 @@ main > .bottom {grid-column:1/-1;width:100%}
 .weight-stats strong {color:#8056a5;font-size:clamp(18px,2vw,28px);overflow-wrap:anywhere}
 .weight-chart {border:1px solid var(--rule);border-radius:12px;padding:16px;margin-bottom:16px}
 .weight-chart h3 {margin:0 0 10px}
-.weight-chart svg {display:block;width:100%;height:auto;max-height:360px;margin-top:12px;overflow:visible}
+.weight-plot {overflow:auto;max-height:400px}
+.weight-chart svg {display:block;width:100%;min-width:1080px;height:auto;margin-top:12px;overflow:visible}
 .weight-chart text {font:13px system-ui,sans-serif;fill:#776181}
 .weight-grid {stroke:#e8dfef;stroke-width:1}
 .weight-line {fill:none;stroke:#8056a5;stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
@@ -333,3 +334,5 @@ main > .bottom {grid-column:1/-1;width:100%}
   .weight-stats small {grid-column:1/-1}
   .weight-chart {padding:10px}
 }
+#app .detail-title #weight-input {flex-shrink:0;min-height:28px;padding:3px 8px;font-size:12px;white-space:nowrap}
+#weight-input .icon {width:16px;height:16px}
